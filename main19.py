@@ -125,7 +125,7 @@ Jac = np.zeros([N+1,N+1])
 for i in range(N+1):
     Jac[i,i] = 1.
 #print 'J is', Jac
-#Jac0 = np.copy(Jac)                 #*** ALT AT 26/03 - ADDING THIS VARIABLE TO ALL Jac CALCULATIONS**
+#Jac0 = np.copy(Jac)                 #** ALT AT 26/03 - ADDING THIS VARIABLE TO ALL Jac CALCULATIONS**
 dsdx = np.zeros([DM,N+1])  
 dxds = np.zeros([N+1,DM]) 
 
