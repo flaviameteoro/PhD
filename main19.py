@@ -59,6 +59,7 @@ for j in range(J):
     xtrue[:,j+1] = mod.lorenz96(xtrue[:,j],force,dt)   
 print 'truth created'
 print xtrue.shape
+# Adding 21st state variable
 forc = np.zeros([1,J+1])
 print forc.shape
 forc[:,:] = F
@@ -92,7 +93,7 @@ for i in range(MO):
     H[i,observed_vars[i]] = 1.0                        
 
 #  observations   
-y = np.zeros([MO,J+1])                                          
+y = np.zeros([MO,J+1])   # verify: J+1???? why not J here? it's definition, not a loop HOWEVER IT CONFLICTS WITH xtrue SHAPE#                                                   
 tobs = np.zeros(NM)
 for t in range(int(NM)):
     tobs[t] = (t+1)*ns
