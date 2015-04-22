@@ -143,11 +143,11 @@ for t in range(integ):
     #print 'x at', t, 'is', x[:,t+1]
 
     # Calculating dF/dx, J, dS/dx for the first 100 steps    
-    dfdx = mod.df(x[:,t+1])  
+    dfdx = mod.df(x[:,t])         # CORRECTION MADE:1st dfdx to be calculated shall be from x[:0] ** Me - 22/04**
     #print 'dfdx', dfdx
     Jac = Jac + dt*(np.dot(dfdx,Jac))         
     #print 'Jac is', Jac    
-    if (t+1 == tobs[count]):    
+    if (t == tobs[count]):    
         #for a in range(DM): 
         dsdx [count,:] = Jac[0,:] 
         count = count + 1
@@ -155,7 +155,8 @@ for t in range(integ):
 
 # Calculating initial dx/dS (10-100)
 #dxds = np.linalg.pinv(dsdx,rcond=1e-16)
-dxds = np.linalg.pinv(dsdx)
+dxds = np.linalg.pinv(dsdx)                 ####  CHECK IF THE COMPLETE CALCULATION WILL BE NEEDED!!!!!!!!########
+print 'dxds', dxds
 
 # Y and S 
 for d in range(DM):
@@ -172,8 +173,8 @@ for d in range(DM):
 summation = np.zeros(N+1)
 dif = Y - S
 #print 'dif', dif.shape
-summation = np.dot(dxds,dif)
-#print 'summation', summation.shape
+summation = np.dot(dxds,dif)                 # This is not exactly what we want, think needs only first row of dxds
+#print 'summation', summation.shape          # being multiplied by the difference
 coup = g*summation
 #print 'coup', coup
 #print 'x', x[:,10].shape
@@ -194,10 +195,10 @@ print 'SE at 0 is', SE
                    
 mcn = 0
 summation = 0
-run = 500
+run = 1000
 
 for z in range(10,run):   
-    print z                                    
+    #print z                                    
     if (z == tobs[mcn]): 
         ldelay = integ + z
         fdelay = ldelay - DM  
@@ -209,7 +210,7 @@ for z in range(10,run):
             #print 'x at', z, 'is', x[:,m+1]
             
             # Calculating the Jacobian from t+DM to (t+DM)+10 
-            dfdx = mod.df(x[:,m+1])  
+            dfdx = mod.df(x[:,m])  
             #print 'dfdx', dfdx
             Jac = Jac + dt*(np.dot(dfdx,Jac))
             #print 'Jac', Jac

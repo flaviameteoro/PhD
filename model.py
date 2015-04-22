@@ -97,7 +97,6 @@ def df(y):
         dkdx[i,ip1] = y[im1]
         dkdx[i,im1] = y[ip1] - y[im2]
         dkdx[i,im2] = -y[im1]
-
     return dkdx
 
 
