@@ -135,7 +135,7 @@ count = 0
 
 # Running x with pure Lorenz to calculate the initial S
 integ = DM*ns   
-for t in range(integ):
+for t in range(integ+1):
     #random = np.random.randn(N+1)
     # Taking off randomness from the model (deterministic in the article) ***** PJ - 19/03 *****
     random = np.zeros(N+1)
@@ -156,7 +156,7 @@ for t in range(integ):
 # Calculating initial dx/dS (10-100)
 #dxds = np.linalg.pinv(dsdx,rcond=1e-16)
 dxds = np.linalg.pinv(dsdx)                 ####  CHECK IF THE COMPLETE CALCULATION WILL BE NEEDED!!!!!!!!########
-print 'dxds', dxds
+#print 'dxds', dxds
 
 # Y and S 
 for d in range(DM):
@@ -173,8 +173,8 @@ for d in range(DM):
 summation = np.zeros(N+1)
 dif = Y - S
 #print 'dif', dif.shape
-summation = np.dot(dxds,dif)                 # This is not exactly what we want, think needs only first row of dxds
-#print 'summation', summation.shape          # being multiplied by the difference
+summation = np.dot(dxds,dif)                 
+#print 'summation', summation.shape          
 coup = g*summation
 #print 'coup', coup
 #print 'x', x[:,10].shape
@@ -194,15 +194,15 @@ print 'SE at 0 is', SE
 # Main loop!
                    
 mcn = 0
-summation = 0
+##summation = 0
 run = 1000
 
-for z in range(10,run):   
+for z in range(11,run):   
     #print z                                    
     if (z == tobs[mcn]): 
         ldelay = integ + z
         fdelay = ldelay - DM  
-        for m in range(fdelay+1,ldelay):
+        for m in range(fdelay+1,ldelay+1):
             #random = np.random.randn(N+1)
             # Taking off randomness from the model (deterministic in the article) ***** PJ - 19/03 **
             random = np.zeros(N+1)            
@@ -294,7 +294,7 @@ if (plotTraj == 1):
     for i in range(N/3):
         plt.subplot(np.ceil(N/8.0),2,i+1)
         #nn=round(np.random.rand(1)*N)
-        plt.plot(x[i,:],'b',label='X')
+        plt.plot(x[i,:],'g',label='X')
 #plt.plot(np.linspace(0,J,J+1),Usir[nn,i,:],'b',label='Posterior samples')
 #        #samples
         plt.hold(True)
