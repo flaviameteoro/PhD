@@ -132,71 +132,91 @@ dxds = np.zeros([N+1,DM])
 
 
 
+## Running from 0 to 10
+##for w in range(10):
+##    random = np.zeros(N+1)
+##    x[:,w+1] = mod.lorenz96(x[:,w],random,dt)  
+    
+##    dfdx = mod.df(x[:,w])         
 
-# Running from 0 to 10
-#Jac10 = np.zeros([N+1,N+1])  
-for w in range(9):
-    random = np.zeros(N+1)
-    x[:,w+1] = mod.lorenz96(x[:,w],random,dt)  
+##    Jac = Jac + dt*(np.dot(dfdx,Jac))   
 
-    dfdx = mod.df(x[:,w])         
-
-    Jac = Jac + dt*(np.dot(dfdx,Jac))   
- 
-#Jac9 = Jac
-
+##print 'x10 is', x[:,10]
         
-        
+# Main loop        
 mcn = 0
 summation = np.zeros(N+1)
-run = 200
-count = 0
+run = 3000
+count = 1
 integ = DM*ns   
 diff = np.zeros(DM)  
-
-for t in range(10, run):
+scount = 0
+print 'Initial of initials dsdx', dsdx
+##for t in range(10, run):
+for t in range(run):
     if (t == tobs[mcn]): 
-        # Calculating dS/dx (from d to d+(DM-1)tau) advancing at each measurement time
-        ldelay = integ + t
+        ### Calculating dS/dx (from d to d+(DM-1)tau) advancing at each measurement time
+        ##ldelay = integ + t
+        print 'Initial x10 is', x[:,10]
+        print 'Initial dsdx', dsdx
+        ldelay = integ + mcn*ns
         for m in range(t,ldelay+1):
-            random = np.zeros(N+1)
-            x[:,m+1] = mod.lorenz96(x[:,m],random,dt)  
-            dfdx = mod.df(x[:,m])
-            Jac = Jac + dt*(np.dot(dfdx,Jac))
-            if (m == tobs[count]):          
-                #dsdx[mcn,:] = Jac[0,:] 
-                for d in range(DM): 
-                    dsdx[d,:] = Jac[0,:] 
-                    td = t+d*ns
-                    #td = d*ns              
-                    Y[d] = y[:,td]                 
-                    S[d] = x[0,td]                
-                    #Y[mcn] = y[:,m]                 
-                    #S[mcn] = x[0,m]
+            if m == t:
+                dsdx[scount,:] = Jac[0,:] 
+                print 'Second dsdx', dsdx
+                scount = scount + 1
+            else:
+                random = np.zeros(N+1)
+                #random = np.random.randn(N+1)
+                x[:,m+1] = mod.lorenz96(x[:,m],random,dt)  
+                #print 'x is', x[:,m+1]
+                dfdx = mod.df(x[:,m])
+                Jac = Jac + dt*(np.dot(dfdx,Jac))   ## SEE IF Jac SHOULD BE FROM TIME 9 TO 10 ##
+                newcount = (count+1)*ns
+                if (m+1 == newcount):          
+                    dsdx[scount,:] = Jac[0,:] 
+                    #print 'dsdx', dsdx
+                    scount = scount + 1
+                    count = count + 1
+        print 'dsdx', dsdx
+        for d in range(DM): 
+            td = t+d*ns
+            #td = d*ns              
+            Y[d] = y[:,td]                 
+            S[d] = x[0,td]                
                 
-                count = count + 1
         dxds = np.linalg.pinv(dsdx)
-        count = 0
+        #check = np.allclose(dsdx, np.dot(dsdx, np.dot(dxds, dsdx)))
+        #print 'check', check
+        print 'dxds', dxds
+        #count = 0
+        scount = 0
         mcn = mcn + 1        
-
+        count = mcn + 1
         # Full dynamics
         dif = Y - S
+        #print 'dif is', dif
         summation = np.dot(dxds,dif)                 
         coup = g*summation
+        #print 'coup is', coup
         x[:,t] = x[:,t] + coup
-
+        print 'x10 is', x[:,10]
+        random = np.zeros(N+1)
+        x[:,t+1] = mod.lorenz96(x[:,t],random,dt) 
     
-        for t in range(DM):                       
-            diff[t] = (Y[t]-S[t])**2        
+        for n in range(DM):                       
+            diff[n] = (Y[n]-S[n])**2        
         SE = np.sqrt((1./DM)*np.sum(diff)) 
-        print 'SE at 0 is', SE     
+        print 'SE is', SE     
 
         plt.plot(t,SE,'b*')
         plt.hold(True)
 
+        #print 'x11 is', x[:,11]
     else:
         random = np.zeros(N+1)
         x[:,t+1] = mod.lorenz96(x[:,t],random,dt)  
+        #print 'x is', x[:,t+1]
         dfdx = mod.df(x[:,t])
         Jac = Jac + dt*(np.dot(dfdx,Jac))
 
