@@ -146,23 +146,26 @@ dxds = np.zeros([N+1,DM])
 # Main loop        
 mcn = 0
 summation = np.zeros(N+1)
-run = 3000
+run = 300
 count = 1
 integ = DM*ns   
-diff = np.zeros(DM)  
+differ = np.zeros(DM)  
 scount = 0
 print 'Initial of initials dsdx', dsdx
 ##for t in range(10, run):
 for t in range(run):
     if (t == tobs[mcn]): 
-        ### Calculating dS/dx (from d to d+(DM-1)tau) advancing at each measurement time
         ##ldelay = integ + t
-        print 'Initial x10 is', x[:,10]
+        #print 'Initial x10 is', x[:,10]
         print 'Initial dsdx', dsdx
         ldelay = integ + mcn*ns
-        for m in range(t,ldelay+1):
+        for m in range(t,ldelay+1):             ## ldelay + 1 really needed or only ldelay is enough? ##
             if m == t:
+                random = np.zeros(N+1)
+                x[:,m+1] = mod.lorenz96(x[:,m],random,dt)  
                 dsdx[scount,:] = Jac[0,:] 
+                dfdx = mod.df(x[:,m])
+                Jac = Jac + dt*(np.dot(dfdx,Jac))
                 print 'Second dsdx', dsdx
                 scount = scount + 1
             else:
@@ -189,24 +192,31 @@ for t in range(run):
         #check = np.allclose(dsdx, np.dot(dsdx, np.dot(dxds, dsdx)))
         #print 'check', check
         print 'dxds', dxds
+        
         #count = 0
         scount = 0
         mcn = mcn + 1        
         count = mcn + 1
+        
         # Full dynamics
         dif = Y - S
         #print 'dif is', dif
         summation = np.dot(dxds,dif)                 
         coup = g*summation
         #print 'coup is', coup
-        x[:,t] = x[:,t] + coup
+        x[:,t] = x[:,t] + coup    ## This is x11??##
         print 'x10 is', x[:,10]
+        
+        # With new x (after coupling)
         random = np.zeros(N+1)
         x[:,t+1] = mod.lorenz96(x[:,t],random,dt) 
+        dfdx = mod.df(x[:,t])
+        Jac = Jactn + dt*(np.dot(dfdx,Jactn))
     
+        S[0] = x[0,t]
         for n in range(DM):                       
-            diff[n] = (Y[n]-S[n])**2        
-        SE = np.sqrt((1./DM)*np.sum(diff)) 
+            differ[n] = (Y[n]-S[n])**2        
+        SE = np.sqrt((1./DM)*np.sum(differ)) 
         print 'SE is', SE     
 
         plt.plot(t,SE,'b*')
@@ -219,7 +229,7 @@ for t in range(run):
         #print 'x is', x[:,t+1]
         dfdx = mod.df(x[:,t])
         Jac = Jac + dt*(np.dot(dfdx,Jac))
-
+        Jactn = Jac
 
 # Main loop!
                    
