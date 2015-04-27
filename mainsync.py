@@ -23,11 +23,11 @@ plotTrace = 0
 J = 10000      # number of steps
 Obs = 100     # obs window
 N = 20       # number of state variables
-dt = 0.01    # deltat                            ## SEE IF THIS TIME STEP GUARANTEES STABILITY AS DT 0.025!!## 
-tau=0.1      # constant time delay (=10dt)
+dt = 0.01  #1    # deltat                            ## SEE IF THIS TIME STEP GUARANTEES STABILITY AS DT 0.025!!## 
+tau= 0.1  #10     # constant time delay (=10dt)
 obsgrid = 4  #number of observations at analysis time (1=all observed, 2=every other observed, 3=half state observed, 4=1 variable)
 ns = 10       #number of time steps between obs
-g = 10      # coupling term
+g = 10 #0.1      # coupling term
 
 # Choose random seed - With the seed reset,same numbers will appear every time 
 # Controlling experiment... 
@@ -51,7 +51,7 @@ for j in range(spinup):
     force = np.zeros(N)
     xhulp[:,j+1] = mod.lorenz96(xhulp[:,j],force,dt)   ### this line returns 1 column for the 20 variables at each loop ####
 xtrue[:,0] = xhulp[:,spinup]
-
+#print 'xtrue', xtrue
 for j in range(J):
     #random = np.random.randn(N)
     #force = np.dot(scov_model,random)
@@ -71,7 +71,8 @@ print 'New xtrue', xtrue.shape
 
 # Creating the observations
 #if (observations == 1):
-NM = J*tau #number of measurement times   # (Increasing DM is equivalent to increasing the number of measurements!) 
+#####NM = J*tau #number of measurement times   # (Increasing DM is equivalent to increasing the number of measurements!) 
+NM = J/ns
     # Select an observation operator
 if obsgrid == 1:
         # Option 1: Observe all
@@ -93,7 +94,7 @@ for i in range(MO):
     H[i,observed_vars[i]] = 1.0                        
 
 #  observations   
-y = np.zeros([MO,J+1])   # verify: J+1???? why not J here? it's definition, not a loop HOWEVER IT CONFLICTS WITH xtrue SHAPE#                                                   
+y = np.zeros([MO,J+1])   # verify: J+1???? why not J here? it's definition, not a loop HOWEVER IT CONFLICTS WITH xtrue SHAPE#           
 tobs = np.zeros(NM)
 for t in range(int(NM)):
     tobs[t] = (t+1)*ns
@@ -146,7 +147,7 @@ dxds = np.zeros([N+1,DM])
 # Main loop        
 mcn = 0
 summation = np.zeros(N+1)
-run = 300
+run = 1000
 count = 1
 integ = DM*ns   
 differ = np.zeros(DM)  
@@ -156,17 +157,19 @@ print 'Initial of initials dsdx', dsdx
 for t in range(run):
     if (t == tobs[mcn]): 
         ##ldelay = integ + t
-        #print 'Initial x10 is', x[:,10]
-        print 'Initial dsdx', dsdx
+        ####print 'Initial x10 is', x[:,10]
+        ####print 'Initial dsdx', dsdx
         ldelay = integ + mcn*ns
+        ####print 'ldelay', ldelay
         for m in range(t,ldelay+1):             ## ldelay + 1 really needed or only ldelay is enough? ##
             if m == t:
                 random = np.zeros(N+1)
-                x[:,m+1] = mod.lorenz96(x[:,m],random,dt)  
+                x[:,m+1] = mod.lorenz96(x[:,m],random,dt) 
+                ####print 'Jac', Jac[0,:]
                 dsdx[scount,:] = Jac[0,:] 
                 dfdx = mod.df(x[:,m])
                 Jac = Jac + dt*(np.dot(dfdx,Jac))
-                print 'Second dsdx', dsdx
+                ####print 'Second dsdx', dsdx
                 scount = scount + 1
             else:
                 random = np.zeros(N+1)
@@ -178,10 +181,10 @@ for t in range(run):
                 newcount = (count+1)*ns
                 if (m+1 == newcount):          
                     dsdx[scount,:] = Jac[0,:] 
-                    #print 'dsdx', dsdx
+                    print 'dsdx', dsdx
                     scount = scount + 1
                     count = count + 1
-        print 'dsdx', dsdx
+        ####print 'dsdx', dsdx
         for d in range(DM): 
             td = t+d*ns
             #td = d*ns              
@@ -189,9 +192,10 @@ for t in range(run):
             S[d] = x[0,td]                
                 
         dxds = np.linalg.pinv(dsdx)
+        dsdx = np.zeros([DM,N+1]) 
         #check = np.allclose(dsdx, np.dot(dsdx, np.dot(dxds, dsdx)))
         #print 'check', check
-        print 'dxds', dxds
+        #print 'dxds', dxds
         
         #count = 0
         scount = 0
@@ -200,16 +204,21 @@ for t in range(run):
         
         # Full dynamics
         dif = Y - S
+        ####print 'Y - S', dif
         #print 'dif is', dif
-        summation = np.dot(dxds,dif)                 
-        coup = g*summation
+        summation = np.dot(dxds,dif)  
+        ###print 'sum', summation               
+        ###### coup = g*summation
+        coup = g*dt*summation
+        ###print 'coup', coup
         #print 'coup is', coup
         x[:,t] = x[:,t] + coup    ## This is x11??##
-        print 'x10 is', x[:,10]
+        ####print 'xt is', x[:,t]
         
         # With new x (after coupling)
         random = np.zeros(N+1)
         x[:,t+1] = mod.lorenz96(x[:,t],random,dt) 
+        print 'x', 'at', t+1, x[:,t+1]
         dfdx = mod.df(x[:,t])
         Jac = Jactn + dt*(np.dot(dfdx,Jactn))
     
@@ -226,9 +235,11 @@ for t in range(run):
     else:
         random = np.zeros(N+1)
         x[:,t+1] = mod.lorenz96(x[:,t],random,dt)  
+        ###print 'x', 'at', t+1, x[:,t+1]
         #print 'x is', x[:,t+1]
         dfdx = mod.df(x[:,t])
         Jac = Jac + dt*(np.dot(dfdx,Jac))
+        ####print 'Jacs are', Jac
         Jactn = Jac
 
 # Main loop!
