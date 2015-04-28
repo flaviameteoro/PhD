@@ -155,7 +155,8 @@ scount = 0
 print 'Initial of initials dsdx', dsdx
 ##for t in range(10, run):
 for t in range(run):
-    if (t == tobs[mcn]): 
+    ####if (t == tobs[mcn]): 
+    if (t == 10): 
         ##ldelay = integ + t
         ####print 'Initial x10 is', x[:,10]
         ####print 'Initial dsdx', dsdx
@@ -168,7 +169,8 @@ for t in range(run):
                 ####print 'Jac', Jac[0,:]
                 dsdx[scount,:] = Jac[0,:] 
                 dfdx = mod.df(x[:,m])
-                Jac = Jac + dt*(np.dot(dfdx,Jac))
+                #######Jac = Jac + dt*(np.dot(dfdx,Jac))
+                Jac = Jac*(np.exp(dt*dfdx))   
                 ####print 'Second dsdx', dsdx
                 scount = scount + 1
             else:
@@ -177,7 +179,9 @@ for t in range(run):
                 x[:,m+1] = mod.lorenz96(x[:,m],random,dt)  
                 #print 'x is', x[:,m+1]
                 dfdx = mod.df(x[:,m])
-                Jac = Jac + dt*(np.dot(dfdx,Jac))   ## SEE IF Jac SHOULD BE FROM TIME 9 TO 10 ##
+                #######Jac = Jac + dt*(np.dot(dfdx,Jac))   ## SEE IF Jac SHOULD BE FROM TIME 9 TO 10 ##
+                Jac = Jac*(np.exp(dt*dfdx))   
+                Jaclast = Jac
                 newcount = (count+1)*ns
                 if (m+1 == newcount):          
                     dsdx[scount,:] = Jac[0,:] 
@@ -192,7 +196,7 @@ for t in range(run):
             S[d] = x[0,td]                
                 
         dxds = np.linalg.pinv(dsdx)
-        dsdx = np.zeros([DM,N+1]) 
+        #dsdx = np.zeros([DM,N+1]) 
         #check = np.allclose(dsdx, np.dot(dsdx, np.dot(dxds, dsdx)))
         #print 'check', check
         #print 'dxds', dxds
@@ -208,7 +212,7 @@ for t in range(run):
         #print 'dif is', dif
         summation = np.dot(dxds,dif)  
         ###print 'sum', summation               
-        ###### coup = g*summation
+        ######coup = g*summation
         coup = g*dt*summation
         ###print 'coup', coup
         #print 'coup is', coup
@@ -220,9 +224,10 @@ for t in range(run):
         x[:,t+1] = mod.lorenz96(x[:,t],random,dt) 
         print 'x', 'at', t+1, x[:,t+1]
         dfdx = mod.df(x[:,t])
-        Jac = Jactn + dt*(np.dot(dfdx,Jactn))
+        #######Jac = Jac + dt*(np.dot(dfdx,Jactn))
+        Jac = Jactn*(np.exp(dt*dfdx))   
     
-        S[0] = x[0,t]
+        #######S[0] = x[0,t]
         for n in range(DM):                       
             differ[n] = (Y[n]-S[n])**2        
         SE = np.sqrt((1./DM)*np.sum(differ)) 
@@ -232,102 +237,77 @@ for t in range(run):
         plt.hold(True)
 
         #print 'x11 is', x[:,11]
+
+    elif (t == tobs[mcn]):
+        ldelay = integ + mcn*ns
+        fdelay = ldelay - ns  
+        Jac = Jaclast
+        for m in range(fdelay+1,ldelay+1):
+            random = np.zeros(N+1)            
+            #random = np.random.randn(N+1)
+            x[:,m+1] = mod.lorenz96(x[:,m],random,dt)  
+                       
+            # Calculating the Jacobian from t+DM to (t+DM)+10 
+            dfdx = mod.df(x[:,m])  
+            #print 'dfdx', dfdx
+            #########Jac = Jac + dt*(np.dot(dfdx,Jac))
+            Jac = Jac*(np.exp(dt*dfdx))  
+            Jaclast = Jac
+            #print 'Jac', Jac
+        
+        # Updating dS/dx
+        for d in range(DM-1):
+            dsdx[d,:] = dsdx[d+1,:]
+        dsdx[DM-1,:] = Jac[0,:] 
+        #print 'Updated dsdx', dsdx        
+
+        # Calculating dx/dS
+        #dxds = np.linalg.pinv(dsdx,rcond=1e-16)
+        dxds = np.linalg.pinv(dsdx)
+        #print 'dxds', dxds
+
+        for d in range(DM): 
+            td = t+d*ns
+            Y[d] = y[:,td]                 
+            S[d] = x[0,td]   
+
+        dif = Y - S
+        print 'dif at', t, 'is', dif
+        summation = np.dot(dxds,dif)  
+        ######coup = g*summation
+        coup = g*dt*summation
+        x[:,t] = x[:,t] + coup    ## This is x11??##
+
+        # With new x (after coupling)
+        random = np.zeros(N+1)
+        x[:,t+1] = mod.lorenz96(x[:,t],random,dt) 
+        print 'x', 'at', t+1, x[:,t+1]
+        dfdx = mod.df(x[:,t])
+        #######Jac = Jac + dt*(np.dot(dfdx,Jactn))
+        Jac = Jactn*(np.exp(dt*dfdx))   
+       
+        #######S[0] = x[0,t]
+        for n in range(DM):                       
+            differ[n] = (Y[n]-S[n])**2        
+        SE = np.sqrt((1./DM)*np.sum(differ)) 
+        print 'SE is', SE     
+
+        plt.plot(t,SE,'b*')
+        plt.hold(True)
+    
+        mcn = mcn + 1  
+
     else:
         random = np.zeros(N+1)
         x[:,t+1] = mod.lorenz96(x[:,t],random,dt)  
         ###print 'x', 'at', t+1, x[:,t+1]
         #print 'x is', x[:,t+1]
         dfdx = mod.df(x[:,t])
-        Jac = Jac + dt*(np.dot(dfdx,Jac))
+        #########Jac = Jac + dt*(np.dot(dfdx,Jac))
+        Jac = Jac*(np.exp(dt*dfdx))   
         ####print 'Jacs are', Jac
         Jactn = Jac
-
-# Main loop!
-                   
-#mcn = 0
-##summation = 0
-#run = 1000
-
-#Jac = Jac9
-#for z in range(10,run):   
-    #print z 
-#    random = np.zeros(N+1)
-#    x[:,z+1] = mod.lorenz96(x[:,z],random,dt)   
-
-#    dfdx = mod.df(x[:,z])  
-
-#    Jac = Jac + dt*(np.dot(dfdx,Jac))                                  
-
-#    if (z == tobs[mcn]): 
-#        ldelay = integ + z
-#        fdelay = ldelay - DM  
-#        for m in range(fdelay+1,ldelay+1):
-#            #random = np.random.randn(N+1)
-#            # Taking off randomness from the model (deterministic in the article) ***** PJ - 19/03 **
-#            random = np.zeros(N+1)            
-#            x[:,m+1] = mod.lorenz96(x[:,m],random,dt)  
-#            #print 'x at', z, 'is', x[:,m+1]
-            
-#            # Calculating the Jacobian from t+DM to (t+DM)+10 
-#            dfdx = mod.df(x[:,m])  
-#            #print 'dfdx', dfdx
-#            Jac = Jac + dt*(np.dot(dfdx,Jac))
-            #print 'Jac', Jac
-        
-        # Updating dS/dx
-#        for d in range(DM-1):
-#            dsdx[d,:] = dsdx[d+1,:]
-#        dsdx[DM-1,:] = Jac[0,:] 
-#        #print 'Updated dsdx', dsdx        
-
-        # Calculating dx/dS
-        #dxds = np.linalg.pinv(dsdx,rcond=1e-16)
-#        dxds = np.linalg.pinv(dsdx)
-
-        # Calculating Y and S from new t to t+DM
-#        for d in range(DM): 
-#            td = z+(d+1)*ns
-            #td = d*ns              
-            #i = d-1
-#            Y[d] = y[:,td]                 
-#            S[d] = x[0,td]
-        #print 'Y is', Y
-        #print 'S is', S
-        #print y[0,10]
-        #print x[0,10]   
-        
-        # Calculating the coupling term
-#        summation = np.zeros(N+1)
-#        dif = Y - S
-        #print dif
-#        summation = np.dot(dxds,dif)
-        
-#        coup = g*summation
-        
-#        x[:,z+DM] = x[:,z+DM] + coup
-        #print 'X(8) pos is',  x[10,z]    
-
-        # Monitoring the synchronisation error
-        #S[0] = x[0,z]
-#        for t in range(DM):                       
-#            diff[t] = (Y[t]-S[t])**2        
-            #print 'Diff', diff
-#        SE = np.sqrt((1./DM)*np.sum(diff)) 
-        #print 'Improved SE at', z, 'is', SE
-        
-#        mcn = mcn+1 
-        
-#        plt.plot(z,SE,'b*')
-#        plt.hold(True)
-   ## else: 
-        #random = np.random.randn(N+1)
-        # Taking off randomness from the model (deterministic in the article) ***** PJ - 19/03 **
-   ##     random = np.zeros(N+1)
-   ##     x[:,z+1] = mod.lorenz96(x[:,z],random,dt)      
-   ##     dfdx = mod.df(x[:,z+1])  
-   ##     Jac = Jac + dt*(np.dot(dfdx,Jac))
-    
-        
+  
     
 plt.draw()
  #Figures-----------------------------------------------------------------------------------------------------------------------------
