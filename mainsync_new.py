@@ -136,25 +136,28 @@ dxds = np.zeros([N+1,DM])
 ## Running from 0 to 10
 for w in range(10):
     random = np.zeros(N+1)
+    #random = np.random.randn(N+1)
     x[:,w+1] = mod.lorenz96(x[:,w],random,dt)  
     
     dfdx = mod.df(x[:,w])         
 
-    Jac = Jac + dt*(np.dot(dfdx,Jac))   
+    #######Jac = Jac + dt*(np.dot(dfdx,Jac))   
+    Jac = Jac*(np.exp(dt*dfdx))   
+    print 'Initial Jacs', Jac
 
 ##print 'x10 is', x[:,10]
         
 # Main loop        
 mcn = 0
 summation = np.zeros(N+1)
-run = 100
+run = 500
 count = 1
 integ = DM*ns   
 differ = np.zeros(DM)  
 scount = 0
-print 'Initial of initials dsdx', dsdx
+##print 'Initial of initials dsdx', dsdx
 ##for t in range(10, run):
-for t in range(10,run,10):
+for t in range(10,run,ns):
     if (t == 10): 
         ##ldelay = integ + t
         ####print 'Initial x10 is', x[:,10]
@@ -164,11 +167,13 @@ for t in range(10,run,10):
         for m in range(t,ldelay+1):             ## ldelay + 1 really needed or only ldelay is enough? ##
             if m == t:
                 random = np.zeros(N+1)
+                #random = np.random.randn(N+1)
                 x[:,m+1] = mod.lorenz96(x[:,m],random,dt) 
                 ####print 'Jac', Jac[0,:]
                 dsdx[scount,:] = Jac[0,:] 
                 dfdx = mod.df(x[:,m])
-                Jac = Jac + dt*(np.dot(dfdx,Jac))
+                #########Jac = Jac + dt*(np.dot(dfdx,Jac))
+                Jac = Jac*(np.exp(dt*dfdx))  
                 ####print 'Second dsdx', dsdx
                 scount = scount + 1
             else:
@@ -177,7 +182,8 @@ for t in range(10,run,10):
                 x[:,m+1] = mod.lorenz96(x[:,m],random,dt)  
                 #print 'x is', x[:,m+1]
                 dfdx = mod.df(x[:,m])
-                Jac = Jac + dt*(np.dot(dfdx,Jac))   ## SEE IF Jac SHOULD BE FROM TIME 9 TO 10 ##
+                ##########Jac = Jac + dt*(np.dot(dfdx,Jac))   ## SEE IF Jac SHOULD BE FROM TIME 9 TO 10 ##
+                Jac = Jac*(np.exp(dt*dfdx))  
                 newcount = (count+1)*ns
                 if (m+1 == newcount):          
                     dsdx[scount,:] = Jac[0,:] 
@@ -208,8 +214,8 @@ for t in range(10,run,10):
         #print 'dif is', dif
         summation = np.dot(dxds,dif)  
         ###print 'sum', summation               
-        ###### coup = g*summation
-        coup = g*dt*summation
+        ###### coup = g*dt*summation
+        coup = g*summation
         ###print 'coup', coup
         #print 'coup is', coup
         x[:,t] = x[:,t] + coup    ## This is x11??##
@@ -237,12 +243,14 @@ for t in range(10,run,10):
         fdelay = ldelay - ns  
         for m in range(fdelay+1,ldelay):
             random = np.zeros(N+1)            
+            #random = np.random.randn(N+1)
             x[:,m+1] = mod.lorenz96(x[:,m],random,dt)  
                        
             # Calculating the Jacobian from t+DM to (t+DM)+10 
             dfdx = mod.df(x[:,m])  
             #print 'dfdx', dfdx
-            Jac = Jac + dt*(np.dot(dfdx,Jac))
+            ######Jac = Jac + dt*(np.dot(dfdx,Jac))
+            Jac = Jac*(np.exp(dt*dfdx))  
             #print 'Jac', Jac
         
         # Updating dS/dx
