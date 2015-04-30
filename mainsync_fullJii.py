@@ -128,27 +128,15 @@ Jac = np.zeros([N+1,N+1])
 for i in range(N+1):
     Jac[i,i] = 1.
 #print 'J is', Jac
-#Jac0 = np.copy(Jac)                 #** ALT AT 26/03 - ADDING THIS VARIABLE TO ALL Jac CALCULATIONS**
+Jac0 = np.copy(Jac)                 
 dsdx = np.zeros([DM,N+1])  
 dxds = np.zeros([N+1,DM]) 
 
-
-
-## Running from 0 to 10
-##for w in range(10):
-##    random = np.zeros(N+1)
-##    x[:,w+1] = mod.lorenz96(x[:,w],random,dt)  
-    
-##    dfdx = mod.df(x[:,w])         
-
-##    Jac = Jac + dt*(np.dot(dfdx,Jac))   
-
-##print 'x10 is', x[:,10]
-        
+       
 # Main loop        
 mcn = 0
 summation = np.zeros(N+1)
-run = 400
+run = 9900
 count = 1
 integ = DM*ns   
 differ = np.zeros(DM)  
@@ -156,8 +144,8 @@ scount = 0
 #print 'Initial of initials dsdx', dsdx
 ##for t in range(10, run):
 for t in range(run):
-    ####if (t == tobs[mcn]): 
-    if (t == 10): 
+    if (t == tobs[mcn]): 
+    ######if (t == 10): 
         ##ldelay = integ + t
         ####print 'Initial x10 is', x[:,10]
         ####print 'Initial dsdx', dsdx
@@ -171,7 +159,7 @@ for t in range(run):
                 dsdx[scount,:] = Jac[0,:] 
                 dfdx = mod.df(x[:,m])
                 Jac = Jac + dt*(np.dot(dfdx,Jac))
-                ########Jac = Jac*(np.exp(dt*dfdx))   
+                #######Jac = Jac*(np.exp(dt*dfdx))   
                 ####print 'Second dsdx', dsdx
                 scount = scount + 1
             else:
@@ -181,7 +169,7 @@ for t in range(run):
                 #print 'x is', x[:,m+1]
                 dfdx = mod.df(x[:,m])
                 Jac = Jac + dt*(np.dot(dfdx,Jac))   ## SEE IF Jac SHOULD BE FROM TIME 9 TO 10 ##
-                ######Jac = Jac*(np.exp(dt*dfdx))   
+                ########Jac = Jac*(np.exp(dt*dfdx))   
                 Jaclast = Jac
                 newcount = (count+1)*ns
                 if (m+1 == newcount):          
@@ -197,7 +185,7 @@ for t in range(run):
             S[d] = x[0,td]                
                 
         dxds = np.linalg.pinv(dsdx)
-        #dsdx = np.zeros([DM,N+1]) 
+        dsdx = np.zeros([DM,N+1]) 
         #check = np.allclose(dsdx, np.dot(dsdx, np.dot(dxds, dsdx)))
         #print 'check', check
         #print 'dxds', dxds
@@ -213,92 +201,35 @@ for t in range(run):
         #print 'dif is', dif
         summation = np.dot(dxds,dif)  
         ###print 'sum', summation               
-        ######coup = g*dt*summation
-        coup = g*summation
+        ######coup = g*summation
+        coup = g*dt*summation
         ###print 'coup', coup
         #print 'coup is', coup
-        x[:,t] = x[:,t] + coup    ## This is x11??##
-        print 'New x is', x[:,t]
+        x[:,t] = x[:,t] + coup    
+        print 'New x at', t,'is', x[:,t]
         
         # With new x (after coupling)
+        Jac = Jac0
+        #print 'Jac', Jac
         random = np.zeros(N+1)
         x[:,t+1] = mod.lorenz96(x[:,t],random,dt) 
-        #print 'x', 'at', t+1, x[:,t+1]
+        ###print 'x', 'at', t+1, x[:,t+1]
         dfdx = mod.df(x[:,t])
         Jac = Jac + dt*(np.dot(dfdx,Jactn))
-        #########Jac = Jactn*(np.exp(dt*dfdx))   
+        ######Jac = Jac*(np.exp(dt*dfdx))   
     
         #######S[0] = x[0,t]
         for n in range(DM):                       
             differ[n] = (Y[n]-S[n])**2        
-        SE = np.sqrt((1./DM)*np.sum(differ)) 
-        #print 'SE is', SE     
+        SE = np.sqrt((1./DM)*(np.sum(differ))) 
+        print 'SE is', SE     
 
         plt.plot(t,SE,'b*')
         plt.hold(True)
 
         #print 'x11 is', x[:,11]
 
-    elif (t == tobs[mcn]):
-        ldelay = integ + mcn*ns
-        fdelay = ldelay - ns  
-        Jac = Jaclast
-        for m in range(fdelay+1,ldelay+1):
-            random = np.zeros(N+1)            
-            #random = np.random.randn(N+1)
-            x[:,m+1] = mod.lorenz96(x[:,m],random,dt)  
-                       
-            # Calculating the Jacobian from t+DM to (t+DM)+10 
-            dfdx = mod.df(x[:,m])  
-            #print 'dfdx', dfdx
-            Jac = Jac + dt*(np.dot(dfdx,Jac))
-            #########Jac = Jac*(np.exp(dt*dfdx))  
-            Jaclast = Jac
-            #print 'Jac', Jac
-        
-        # Updating dS/dx
-        for d in range(DM-1):
-            dsdx[d,:] = dsdx[d+1,:]
-        dsdx[DM-1,:] = Jac[0,:] 
-        #print 'Updated dsdx', dsdx        
-
-        # Calculating dx/dS
-        #dxds = np.linalg.pinv(dsdx,rcond=1e-16)
-        dxds = np.linalg.pinv(dsdx)
-        #print 'dxds', dxds
-
-        for d in range(DM): 
-            td = t+d*ns
-            Y[d] = y[:,td]                 
-            S[d] = x[0,td]   
-
-        dif = Y - S
-        #print 'dif at', t, 'is', dif
-        summation = np.dot(dxds,dif)  
-        ######coup = g*dt*summation
-        coup = g*summation
-        x[:,t] = x[:,t] + coup    
-        print 'New x at', t,'is', x[:,t]
-
-        # With new x (after coupling)
-        random = np.zeros(N+1)
-        x[:,t+1] = mod.lorenz96(x[:,t],random,dt) 
-        #print 'x', 'at', t+1, x[:,t+1]
-        dfdx = mod.df(x[:,t])
-        Jac = Jac + dt*(np.dot(dfdx,Jactn))
-        ########Jac = Jactn*(np.exp(dt*dfdx))   
-       
-        #######S[0] = x[0,t]
-        for n in range(DM):                       
-            differ[n] = (Y[n]-S[n])**2        
-        SE = np.sqrt((1./DM)*np.sum(differ)) 
-        #print 'SE is', SE     
-
-        plt.plot(t,SE,'b*')
-        plt.hold(True)
     
-        mcn = mcn + 1  
-
     else:
         random = np.zeros(N+1)
         x[:,t+1] = mod.lorenz96(x[:,t],random,dt)  
@@ -306,7 +237,7 @@ for t in range(run):
         #print 'x is', x[:,t+1]
         dfdx = mod.df(x[:,t])
         Jac = Jac + dt*(np.dot(dfdx,Jac))
-        ##########Jac = Jac*(np.exp(dt*dfdx))   
+        #######Jac = Jac*(np.exp(dt*dfdx))   
         ####print 'Jacs are', Jac
         Jactn = Jac
   
@@ -330,7 +261,7 @@ if (plotTruth == 1):
 
 #Plot samples, truth, observations for SIR
 if (plotTraj == 1):
-    plt.figure(figsize=(12, 10)).suptitle('Sync - Reuse of dS/dx')
+    plt.figure(figsize=(12, 10)).suptitle('Full sync - J reinitialized')
     for i in range(N/3):
         plt.subplot(np.ceil(N/8.0),2,i+1)
         if i == 0:  
@@ -346,5 +277,6 @@ if (plotTraj == 1):
         plt.ylabel('x['+str(i)+']')
         plt.xlabel('time steps')
     plt.show()
+
 
 
