@@ -26,7 +26,7 @@ N = 20       # number of state variables
 dt = 0.01  #1    # deltat                            ## SEE IF THIS TIME STEP GUARANTEES STABILITY AS DT 0.025!!## 
 tau= 0.1  #10     # constant time delay (=10dt)
 obsgrid = 4  #number of observations at analysis time (1=all observed, 2=every other observed, 3=half state observed, 4=1 variable)
-ns = 2  #number of time steps between obs
+ns = 10  #number of time steps between obs
 g = 10 #0.1      # coupling term
 
 # Choose random seed - With the seed reset,same numbers will appear every time 
@@ -111,7 +111,7 @@ print 'observations created'
 # Creating the DM-dimensional time-delay vectors
 # data vector Y
 # Creating DM-dimensional map from physical space to delay embedding space - vector S
-DM = 5
+DM = 10
 Y = np.zeros(DM)            
 S = np.zeros(DM)            
 
@@ -136,7 +136,7 @@ dxds = np.zeros([N+1,DM])
 # Main loop        
 mcn = 0
 summation = np.zeros(N+1)
-run = 5000
+run = 9900
 count = 1
 integ = DM*ns   
 differ = np.zeros(DM)  
@@ -144,7 +144,6 @@ scount = 0
 SE = 0
 countse = 1
 
-#print 'Initial of initials dsdx', dsdx
 ##for t in range(10, run):
 for t in range(run):
     if (t == tobs[mcn]): 
@@ -162,7 +161,7 @@ for t in range(run):
                 dsdx[scount,:] = Jac[0,:] 
                 dfdx = mod.df(x[:,m])
                 Jac = Jac + dt*(np.dot(dfdx,Jac))
-                #######Jac = Jac*(np.exp(dt*dfdx))   
+                ######Jac = Jac*(np.exp(dt*dfdx))   
                 ####print 'Second dsdx', dsdx
                 scount = scount + 1
             else:
@@ -172,7 +171,7 @@ for t in range(run):
                 #print 'x is', x[:,m+1]
                 dfdx = mod.df(x[:,m])
                 Jac = Jac + dt*(np.dot(dfdx,Jac))   ## SEE IF Jac SHOULD BE FROM TIME 9 TO 10 ##
-                ########Jac = Jac*(np.exp(dt*dfdx))   
+                #####Jac = Jac*(np.exp(dt*dfdx))   
                 Jaclast = Jac
                 newcount = (count+1)*ns
                 if (m+1 == newcount):          
@@ -200,26 +199,31 @@ for t in range(run):
         
         # Full dynamics
         dif = Y - S
+        ###################dif = Y[0] - S[0]
         ####print 'Y - S', dif
         #print 'dif is', dif
         summation = np.dot(dxds,dif)  
+        ###################summation = np.dot(dxds[:,0],dif)  
         ###print 'sum', summation               
-        #######coup = g*summation
-        coup = g*dt*summation
+        coup = g*summation
+        ###############coup = g*dt*summation
         ###print 'coup', coup
         #print 'coup is', coup
-        x[:,t] = x[:,t] + coup    
+        ################x[:,t] = x[:,t] + coup    
+        ################x[:,t] = x[:,t] + dt*(x[:,t] + coup)  
+        ################x[:,t] = dt*(x[:,t] + coup)     
         print 'New x at', t,'is', x[:,t]
         
         # With new x (after coupling)
         Jac = Jac0
         #print 'Jac', Jac
         random = np.zeros(N+1)
-        x[:,t+1] = mod.lorenz96(x[:,t],random,dt) 
+        ################x[:,t+1] = mod.lorenz96(x[:,t],random,dt) 
+        x[:,t+1] = x[:,t] + dt*(x[:,t] + coup)    
         ###print 'x', 'at', t+1, x[:,t+1]
-        dfdx = mod.df(x[:,t])
-        Jac = Jac + dt*(np.dot(dfdx,Jac))
-        ######Jac = Jac*(np.exp(dt*dfdx))   
+        ################dfdx = mod.df(x[:,t])
+        ################Jac = Jac + dt*(np.dot(dfdx,Jac))
+        #####Jac = Jac*(np.exp(dt*dfdx))   
     
         if (t > 99):   
             for z in range(DM): 
@@ -245,7 +249,7 @@ for t in range(run):
         #print 'x is', x[:,t+1]
         dfdx = mod.df(x[:,t])
         Jac = Jac + dt*(np.dot(dfdx,Jac))
-        #######Jac = Jac*(np.exp(dt*dfdx))   
+        ######Jac = Jac*(np.exp(dt*dfdx))   
         ####print 'Jacs are', Jac
         Jactn = Jac
 
