@@ -63,7 +63,7 @@ def rk4(Xold,dt):
 def l95(x,dt):
     "The actual Lorenz 1996 model."
     N = len(x)
-    F=8
+    F=8.17
     k=np.empty_like(x)
     k.fill(np.nan)
     
