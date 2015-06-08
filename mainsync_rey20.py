@@ -61,11 +61,11 @@ for j in range(J):
 print 'truth created'
 ######print xtrue.shape
 # Adding 21st state variable
-forc = np.zeros([1,J+1])
+######forc = np.zeros([1,J+1])
 ######print forc.shape
-forc[:,:] = F
+######forc[:,:] = F
 ######print forc 
-xtrue = np.append(xtrue,forc, axis=0)
+######xtrue = np.append(xtrue,forc, axis=0)
 #####print 'New xtrue', xtrue.shape
 #print xtrue[0,1]
 
@@ -90,22 +90,19 @@ elif obsgrid == 4:
 MO = len(observed_vars) 
 
 # adding N+1 for including the 21st variable in the future                          
-H = np.zeros([MO,N+1])       
+H = np.zeros([MO,N])       
 for i in range(MO):
     H[i,observed_vars[i]] = 1.0                        
 
 #  observations   
 y = np.zeros([MO,J+1])   # verify: J+1???? why not J here? it's definition, not a loop HOWEVER IT CONFLICTS WITH xtrue SHAPE#           
 tobs = np.zeros(NM)
-for t in range(int(NM)):
-    tobs[t] = (t+1)*ns
-    ########random=np.random.randn(MO)
-    random = np.zeros(MO)
-    #########y[:,tobs[t]] = np.dot(H,xtrue[:,tobs[t]])+random[:]
-    y = np.dot(H,xtrue)
-#print 'y[0,0.2] is', y[0,0.2]
-#print 'y[0,20] is', y[0,20]
-#print y[0,10000]
+for z in range(int(NM)):
+    tobs[z] = (z+1)*ns
+########random=np.random.randn(MO)
+random = np.zeros(MO)
+#########y[:,tobs[t]] = np.dot(H,xtrue[:,tobs[t]])+random[:]
+y = np.dot(H,xtrue)
 print 'y is', y
 print 'xtrue is', xtrue
 print 'observations created'
@@ -120,25 +117,25 @@ S = np.zeros(DM)
 
 
 # Defining initial x, dF/dx and J    
-x = np.zeros([N+1,J+1])               ## verify: J+1???? why not J here? it's definition, not a loop# 
+x = np.zeros([N,J+1])               ## verify: J+1???? why not J here? it's definition, not a loop# 
 # Aplying randomness to x, not to be equal to xtrue ***** PJ - 19/03 *****
-randomini = np.random.rand(N+1)-0.5
+randomini = np.random.rand(N)-0.5
 x[:,0] = xtrue[:,0] + randomini
-dfdx = np.zeros([N+1,N+1]) 
+dfdx = np.zeros([N,N]) 
 
 # Creating initial condition for J (Jab = 1 when a=b)
-Jac = np.zeros([N+1,N+1])                 
-for i in range(N+1):
+Jac = np.zeros([N,N])                 
+for i in range(N):
     Jac[i,i] = 1.
 #print 'J is', Jac
 Jac0 = np.copy(Jac)                 
-dsdx = np.zeros([DM,N+1])  
-dxds = np.zeros([N+1,DM]) 
+dsdx = np.zeros([DM,N])  
+dxds = np.zeros([N,DM]) 
 
        
 # Main loop        
 mcn = 0
-summation = np.zeros(N+1)
+summation = np.zeros(N)
 run = 200
 count = 1
 integ = DM*ns   
@@ -159,10 +156,11 @@ for t in range(run):
         for i in range(1,ns+1):
             tt = t + (i-1+(n-1)*ns)
           
-            random = np.zeros(N+1)
+            #random = np.zeros(N)
             x[:,tt+1] = mod.lorenz96(x[:,tt],random,dt) 
-             
+            ####f = mod.l95(x[:,tt],dt) 
             dfdx = mod.df(x[:,tt])
+            #print 'dfdx', dfdx
             Jac = np.dot(dfdx,Jac)
           
         idxs = MO*(n-2) + MO
@@ -184,17 +182,21 @@ for t in range(run):
   
     x[:,t] = x[:,t] + coup    
    
-    random = np.zeros(N+1)
+    random = np.zeros(N)
     x[:,t+1] = mod.lorenz96(x[:,t],random,dt) 
       
     if (t == tobs[mcn]): 
-        dd = xtrue - x
-        print 'First SE is', SE
-        SE = np.sqrt(np.mean(np.square(dd)))            
-
-        plt.plot(t,SE,'b*') 
-        plt.yscale('log')
-        plt.hold(True)
+        
+        for d in range(t+1):
+            dd = np.zeros([N,t]) 
+            dd[:,d] = xtrue[:,d] - x[:,d]
+            #dd = xtrue[:,t] - x[:,t]            
+            SE = np.sqrt(np.mean(np.square(dd[:,d])))            
+            print 'SE is', SE
+    
+            plt.plot(d,SE,'b*') 
+            plt.yscale('log')
+            plt.hold(True)
     
         mcn = mcn + 1
         
