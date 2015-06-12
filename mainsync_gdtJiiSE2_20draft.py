@@ -52,7 +52,7 @@ F=8.17
 ######    xhulp[:,j+1] = mod.lorenz96(xhulp[:,j],force,dt)  
 ######xtrue[:,0] = xhulp[:,spinup]
 xtrue[:,0] = np.random.rand(N)
-print 'xtrue', xtrue
+#####print 'xtrue', xtrue
 for j in range(J):
     #random = np.random.randn(N)
     #force = np.dot(scov_model,random)
@@ -140,6 +140,8 @@ countse = 1
 ntau = tau/dt
 integ2 = DM*ntau   
 mcn = 0
+pinv_tol = 2.2204e-16
+max_pinv_rank = N
 
 x[:,10] = x[:,0]
 for z in range(run):
@@ -166,9 +168,16 @@ for z in range(run):
     
             dfdx = mod.df(x[:,m])
     
-            ####Jac = Jac + dt*(np.dot(dfdx,Jac))   
-            Jac = np.dot(dfdx,Jac) 
-            
+            Jac = Jac + dt*(np.dot(dfdx,Jac))   
+            ##########Jac = dt*(np.dot(dfdx,Jac)) 
+            #Jac = np.dot(dfdx,Jac)  
+                                  
+            ####Jacsize = N**2
+            ####Jacvec = Jac.reshape(Jacsize)
+            ####random = np.zeros(Jacsize)
+            ####Jacvecnew = mod.lorenz96(Jacvec,random,dt)
+            ####Jac = Jacvecnew.reshape(N,N)
+
             S[scount] = x[0,m+1]
             dsdx[scount,:] = Jac[0,:] 
             scount = scount + 1
@@ -180,19 +189,53 @@ for z in range(run):
     
             dfdx = mod.df(x[:,m])
     
-            ####Jac = Jac + dt*(np.dot(dfdx,Jac))   
-            Jac = np.dot(dfdx,Jac)           
-                    
+            Jac = Jac + dt*(np.dot(dfdx,Jac))  
+            ###########Jac = dt*(np.dot(dfdx,Jac)) 
+            #Jac = np.dot(dfdx,Jac)           
+            
+            ####Jacsize = N**2
+            ####Jacvec = Jac.reshape(Jacsize)
+            ####random = np.zeros(Jacsize)
+            ####Jacvecnew = mod.lorenz96(Jacvec,random,dt)
+            ####Jac = Jacvecnew.reshape(N,N)
+        
     for d in range(DM): 
         td = z+d*ntau
     
         Y[d] = y[:,td]                 
         #S[d] = x[0,td]                
-                
-    dxds = np.linalg.pinv(dsdx)
-    #dsdx = np.zeros([DM,N]) 
-        
     
+    print 'dsdx', dsdx            
+    #dxds = np.linalg.pinv(dsdx)
+    U, G, V = mod.svd(dsdx)
+    print 'U', U
+    print 'U size', U.shape
+    print 'G', G
+    print 'G size', G.shape
+    print 'V', V
+    print 'V size', V.shape
+    #G = np.diag(G)
+    #print 'G', G
+    for k in range(len(G)):
+        mask = np.ones(len(G))        
+        if G[k] >= pinv_tol:
+        #for G[k] >= pinv_tol:        
+        #if float(G[k]) < pinv_tol:
+            mask[k] = 1
+        else:
+            mask[k] = 0
+    print 'mask', mask
+    r = min(max_pinv_rank,sum(mask)) 
+    Ginv = G[:r]**(-1) 
+    print 'Ginv', Ginv
+    Ginv = np.diag(Ginv)
+    print 'Ginv', Ginv
+    print 'Ginv size', Ginv.shape
+    print 'V[:,:r] size', V[:,:r].shape
+    print 'U[:,:r] size', U[:,:r].shape
+    dxds = np.dot(V[:,:r],Ginv)#*(np.transpose(U[:,:r]))    
+    dxds = np.dot(dxds,(np.transpose(U[:,:r])))  
+
     #scount = 0
     #mcn = mcn + 1        
     #count = mcn + 1
@@ -208,7 +251,7 @@ for z in range(run):
     
     random = np.zeros(N)
     
-    #x[:,t+1] = x[:,t] + dt*(x[:,t] + coup)    
+    #############x[:,z+1] = x[:,z] + dt*(x[:,z] + coup)    
     x[:,z] = x[:,z] + coup
     x[:,z+1] = mod.lorenz96(x[:,z],random,dt)     
 

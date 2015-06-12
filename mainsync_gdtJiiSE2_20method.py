@@ -91,8 +91,7 @@ for t in range(int(NM)):
     tobs[t] = (t+1)*ns
    
     random = np.zeros(MO)
-    ####y[:,tobs[t]] = np.dot(H,xtrue[:,tobs[t]])+random[:]  
-y = np.dot(H,xtrue)
+    y[:,tobs[t]] = np.dot(H,xtrue[:,tobs[t]])+random[:]  
 
 print 'observations created'
 
@@ -111,9 +110,8 @@ x = np.zeros([N,J+1])
 random = np.random.randn(N)
 x[:,0] = xtrue[:,0] + random
 dfdx = np.zeros([N,N]) 
-#randomini = np.random.rand(N)-0.5
-#x[:,0] = xtrue[:,0] + randomini
-#dfdx = np.zeros([N,N]) 
+dflast = np.zeros([N,N]) 
+
 # Creating initial condition for J (Jab = 1 when a=b)
 Jac = np.zeros([N,N])                 
 for i in range(N):
@@ -127,7 +125,7 @@ dxds = np.zeros([N,DM])
 # Main loop        
 mcn = 0
 summation = np.zeros(N)
-run = 2000
+run = 200
 count = 1
 integ = DM*ns   
 differ = np.zeros(DM)  
@@ -147,10 +145,19 @@ for t in range(run):
                 x[:,m+1] = mod.lorenz96(x[:,m],random,dt) 
     
                 dsdx[scount,:] = Jac[0,:] 
+                
                 dfdx = mod.df(x[:,m])
-    
                 Jac = Jac + dt*(np.dot(dfdx,Jac))
-    
+                
+                #Jacvec = mod.rk4_J(x[:,m],dt) 
+                #Jac = Jacvec.reshape(N,N)
+                #Jaclast = Jac 
+                #dflast = dfdx               
+                #Jac = Jaclast + dt*(np.dot(dflast,Jaclast))
+                #dfdx = mod.df(x[:,m+1])
+                #Jac = Jaclast + 0.5*dt*(np.dot(dfdx,Jac)-(np.dot(dflast,Jaclast)))                 
+                #Jac = Jac + 0.5*dt*(3*(np.dot(dfdx,Jac)-(np.dot(dflast,Jaclast))))            
+                
                 scount = scount + 1
             else:
                 random = np.zeros(N)
@@ -158,10 +165,18 @@ for t in range(run):
                 x[:,m+1] = mod.lorenz96(x[:,m],random,dt)  
     
                 dfdx = mod.df(x[:,m])
-    
-                Jac = Jac + dt*(np.dot(dfdx,Jac))   
-    
-                Jaclast = Jac
+                Jac = Jac + dt*(np.dot(dfdx,Jac))
+                
+                #Jacvec = mod.rk4_J(x[:,m],dt) 
+                #Jac = Jacvec.reshape(N,N)
+                #Jaclast = Jac 
+                #dflast = dfdx               
+                #Jac = Jaclast + dt*(np.dot(dflast,Jaclast))
+                #dfdx = mod.df(x[:,m+1])
+                #Jac = Jaclast + 0.5*dt*(np.dot(dfdx,Jac)-(np.dot(dflast,Jaclast)))                 
+                #Jac = Jac + 0.5*dt*(3*(np.dot(dfdx,Jac)-(np.dot(dflast,Jaclast))))                
+                
+                
                 newcount = (count+1)*ns
                 if (m+1 == newcount):          
                     dsdx[scount,:] = Jac[0,:] 
@@ -175,43 +190,9 @@ for t in range(run):
             Y[d] = y[:,td]                 
             S[d] = x[0,td]                
                 
-        pinv_tol = 2.2204e-16
-        dxds = np.linalg.pinv(dsdx,rcond=pinv_tol)        
-        #dxds = np.linalg.pinv(dsdx)
+        dxds = np.linalg.pinv(dsdx)
         dsdx = np.zeros([DM,N]) 
-        ####pinv_tol = 2.2204e-16
-        ####max_pinv_rank = N
-
-        #print 'dsdx', dsdx            
-        #dxds = np.linalg.pinv(dsdx)
-        ####U, G, V = mod.svd(dsdx)
-        #print 'U', U
-        #print 'U size', U.shape
-        #print 'G', G
-        #print 'G size', G.shape
-        #print 'V', V
-        #print 'V size', V.shape
-        #G = np.diag(G)
-        #print 'G', G
-        ####for k in range(len(G)):
-            ####mask = np.ones(len(G))        
-            ####if G[k] >= pinv_tol:
-            #for G[k] >= pinv_tol:        
-            #if float(G[k]) < pinv_tol:
-                ####mask[k] = 1
-            ####else:
-                ####mask[k] = 0
-        #print 'mask', mask
-        ####r = min(max_pinv_rank,sum(mask)) 
-        ####Ginv = G[:r]**(-1) 
-        #print 'Ginv', Ginv
-        ####Ginv = np.diag(Ginv)
-        #print 'Ginv', Ginv
-        #print 'Ginv size', Ginv.shape
-        #print 'V[:,:r] size', V[:,:r].shape
-        #print 'U[:,:r] size', U[:,:r].shape
-        ####dxds = np.dot(V[:,:r],Ginv)   
-        ####dxds = np.dot(dxds,(np.transpose(U[:,:r]))) 
+        
     
         scount = 0
         mcn = mcn + 1        
@@ -235,7 +216,7 @@ for t in range(run):
             dd[:,d] = xtrue[:,d] - x[:,d]
            
         SE = np.sqrt(np.mean(np.square(dd)))            
-        print 'SE for', t, 'is', SE
+        print 'SE is', SE
     
         plt.plot(d,SE,'b*') 
         plt.yscale('log')
@@ -246,10 +227,16 @@ for t in range(run):
         x[:,t+1] = mod.lorenz96(x[:,t],random,dt)  
     
         dfdx = mod.df(x[:,t])
-    
         Jac = Jac + dt*(np.dot(dfdx,Jac))
-    
-        Jactn = Jac
+                
+        #Jacvec = mod.rk4_J(x[:,m],dt) 
+        #Jac = Jacvec.reshape(N,N)
+        
+        #Jactn = Jac 
+        #Jac = Jac + dt*(np.dot(dfdx,Jac))
+        #dflast = np.copy(dfdx)    
+
+        #Jaclast = Jac
 
  
     
