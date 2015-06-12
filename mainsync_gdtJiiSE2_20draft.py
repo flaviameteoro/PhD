@@ -233,7 +233,7 @@ for z in range(run):
     print 'Ginv size', Ginv.shape
     print 'V[:,:r] size', V[:,:r].shape
     print 'U[:,:r] size', U[:,:r].shape
-    dxds = np.dot(V[:,:r],Ginv)#*(np.transpose(U[:,:r]))    
+    dxds = np.dot(V[:,:r],Ginv)   
     dxds = np.dot(dxds,(np.transpose(U[:,:r])))  
 
     #scount = 0
