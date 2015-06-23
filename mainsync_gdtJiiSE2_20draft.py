@@ -26,7 +26,7 @@ N = 20       # number of state variables
 dt = 0.01  #1    # deltat                            ## SEE IF THIS TIME STEP GUARANTEES STABILITY AS DT 0.025!!## 
 tau= 0.1  #10     # constant time delay (=10dt)
 obsgrid = 4  #number of observations at analysis time (1=all observed, 2=every other observed, 3=half state observed, 4=1 variable)
-ns = 10  #number of time steps between obs
+ns = 2  #number of time steps between obs
 g = 10 #0.1      # coupling term
 
 # Choose random seed - With the seed reset,same numbers will appear every time 
@@ -129,7 +129,7 @@ dxds = np.zeros([N,DM])
 # Main loop        
 #mcn = 0
 summation = np.zeros(N)
-run = 9900
+run = 1000
 count = 1
 integ = DM*ns
 differ = np.zeros(DM)  
@@ -142,6 +142,7 @@ integ2 = DM*ntau
 mcn = 0
 pinv_tol = 2.2204e-16
 max_pinv_rank = N
+xtran = np.zeros([N,1]) 
 
 x[:,10] = x[:,0]
 for z in range(run):
@@ -152,6 +153,7 @@ for z in range(run):
     #print 'last', last
 
     S[scount] = x[0,z]
+    Y[scount] = y[0,z]
     dsdx[scount,:] = Jac0[0,:]  
     scount = scount + 1
     
@@ -159,17 +161,39 @@ for z in range(run):
     
     x[:,first] = x[:,z]
     #block = first+ntau
-
+    
     for m in range(first,last): 
         block = first+(scount*ntau)           
         if (m+1  == block): 
-            random = np.zeros(N)
-            x[:,m+1] = mod.lorenz96(x[:,m],random,dt) 
+            #random = np.zeros(N)
+            #x[:,m+1] = mod.lorenz96(x[:,m],random,dt) 
     
-            dfdx = mod.df(x[:,m])
-    
-            Jac = Jac + dt*(np.dot(dfdx,Jac))   
-            ##########Jac = dt*(np.dot(dfdx,Jac)) 
+            ###dfdx = mod.df(x[:,m])
+            ###Jac = np.dot(dfdx,Jac)
+            #Jac = Jac + dt*(np.dot(dfdx,Jac))   
+            print 'Jac for m', m, 'is', Jac
+            print 'x at', m, 'is', x[:,m]
+            Jacsize = N**2
+            Jacv = Jac.reshape(Jacsize) 
+            Jacvec = Jacv.reshape(Jacsize,1)
+            dxdt = mod.dxdt(x[:,m],Jacvec,N,dt)
+            xtran = mod.rk4(dxdt,dt)
+            x[:,m+1] = xtran[0:N]
+            Jact = xtran[N:]
+            Jac = Jact.reshape(N,N)
+            print 'Jac for m', m+1, 'is', Jac
+            print 'x at', m+1, 'is', x[:,m+1]
+            #dfdx = mod.df(x[:,m])
+            #dfdx = mod.rk4_J2(x[:,m],dfdx,dt)
+            
+
+            #dfdx = mod.df(x[:,m])
+            #Jac = Jac + dt*(np.dot(dfdx,Jac))
+            #Jacsize = N**2
+            #Jacvec = Jac.reshape(Jacsize) 
+            #Jac = mod.rk4_J(x[:,m],Jacvec,dt)
+            #print 'Jac', Jac
+            ####Jac = dt*(np.dot(dfdx,Jac)) 
             #Jac = np.dot(dfdx,Jac)  
                                   
             ####Jacsize = N**2
@@ -184,13 +208,35 @@ for z in range(run):
             #mcn = mcn + 1      
 
         else:
-            random = np.zeros(N)
-            x[:,m+1] = mod.lorenz96(x[:,m],random,dt)  
+            #random = np.zeros(N)
+            #x[:,m+1] = mod.lorenz96(x[:,m],random,dt)  
     
-            dfdx = mod.df(x[:,m])
-    
-            Jac = Jac + dt*(np.dot(dfdx,Jac))  
-            ###########Jac = dt*(np.dot(dfdx,Jac)) 
+            ###dfdx = mod.df(x[:,m])
+            ###Jac = np.dot(dfdx,Jac)
+            #Jac = Jac + dt*(np.dot(dfdx,Jac))   
+            print 'Jac for m', m, 'is', Jac
+            print 'x at', m, 'is', x[:,m]
+            Jacsize = N**2
+            Jacv = Jac.reshape(Jacsize) 
+            Jacvec = Jacv.reshape(Jacsize,1)
+            dxdt = mod.dxdt(x[:,m],Jacvec,N,dt)
+            xtran = mod.rk4(dxdt,dt)
+            x[:,m+1] = xtran[0:N]
+            Jact = xtran[N:]
+            Jac = Jact.reshape(N,N)
+            print 'Jac for m', m+1, 'is', Jac
+            print 'x at', m+1, 'is', x[:,m+1]
+            #dfdx = mod.df(x[:,m])
+            #dfdx = mod.rk4_J2(x[:,m],dfdx,dt)
+            
+
+            #dfdx = mod.df(x[:,m])
+            #Jac = Jac + dt*(np.dot(dfdx,Jac))
+            #Jacsize = N**2
+            #Jacvec = Jac.reshape(Jacsize) 
+            #Jac = mod.rk4_J(x[:,m],Jacvec,dt)
+            #print 'Jac', Jac
+            ####Jac = dt*(np.dot(dfdx,Jac)) 
             #Jac = np.dot(dfdx,Jac)           
             
             ####Jacsize = N**2
@@ -198,22 +244,23 @@ for z in range(run):
             ####random = np.zeros(Jacsize)
             ####Jacvecnew = mod.lorenz96(Jacvec,random,dt)
             ####Jac = Jacvecnew.reshape(N,N)
-        
-    for d in range(DM): 
-        td = z+d*ntau
     
+    #for d in range(DM):     
+    for d in range(2,DM): 
+        td = z+d*ntau
         Y[d] = y[:,td]                 
+        #Y[d] = y[:,td]                 
         #S[d] = x[0,td]                
     
     print 'dsdx', dsdx            
     #dxds = np.linalg.pinv(dsdx)
     U, G, V = mod.svd(dsdx)
-    print 'U', U
-    print 'U size', U.shape
-    print 'G', G
-    print 'G size', G.shape
-    print 'V', V
-    print 'V size', V.shape
+    #print 'U', U
+    #print 'U size', U.shape
+    #print 'G', G
+    #print 'G size', G.shape
+    #print 'V', V
+    #print 'V size', V.shape
     #G = np.diag(G)
     #print 'G', G
     for k in range(len(G)):
@@ -224,41 +271,47 @@ for z in range(run):
             mask[k] = 1
         else:
             mask[k] = 0
-    print 'mask', mask
+    #print 'mask', mask
     r = min(max_pinv_rank,sum(mask)) 
     Ginv = G[:r]**(-1) 
-    print 'Ginv', Ginv
+    #print 'Ginv', Ginv
     Ginv = np.diag(Ginv)
-    print 'Ginv', Ginv
-    print 'Ginv size', Ginv.shape
-    print 'V[:,:r] size', V[:,:r].shape
-    print 'U[:,:r] size', U[:,:r].shape
+    #print 'Ginv', Ginv
+    #print 'Ginv size', Ginv.shape
+    #print 'V[:,:r] size', V[:,:r].shape
+    #print 'U[:,:r] size', U[:,:r].shape
     dxds = np.dot(V[:,:r],Ginv)   
     dxds = np.dot(dxds,(np.transpose(U[:,:r])))  
-
+    #print 'dxds', dxds
     #scount = 0
     #mcn = mcn + 1        
     #count = mcn + 1
-        
+    print 'dxds', dxds    
     # Full dynamics
     dif = Y - S
-    
+    print 'dif is', dif
     summation = np.dot(dxds,dif)  
     
     coup = g*summation
-        
+    print 'coup is', coup    
     #Jac = Jac0
     
     random = np.zeros(N)
     
-    #############x[:,z+1] = x[:,z] + dt*(x[:,z] + coup)    
-    x[:,z] = x[:,z] + coup
-    x[:,z+1] = mod.lorenz96(x[:,z],random,dt)     
+    #x[:,z+1] = x[:,z] + dt*(x[:,z] + coup)    
+    xtran2 = x[:,z] + coup
+    x[:,z+1] = mod.lorenz96(xtran2,random,dt) 
+    print 'xnew at', z+1, 'is', x[:,z+1]
+    ###x[:,z+1] = mod.lorenz96(x[:,z],random,dt)     
+    ###x[:,z+1] = x[:,z+1] + coup
+    #########xtran[:,z] = mod.l95(x[:,z],dt) + coup 
+    #########x[:,z+1] = mod.rk4(xtran[:,z],dt) 
 
-    for d in range(z+2):
-        dd = np.zeros([N,z+2]) 
-        dd[:,d] = xtrue[:,d] - x[:,d]
-           
+    for d in range(z+1):
+        ####dd = np.zeros([N,z+2]) 
+        ####dd[:,d] = xtrue[:,d] - x[:,d]
+        dd = np.zeros([1,z+1])   
+        dd[:,d] = xtrue[0,d] - x[0,d]
     SE = np.sqrt(np.mean(np.square(dd)))            
     print 'SE for', z+1, 'is', SE
     

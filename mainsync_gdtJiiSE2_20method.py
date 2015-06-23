@@ -26,7 +26,7 @@ N = 20       # number of state variables
 dt = 0.01  #1    # deltat                            ## SEE IF THIS TIME STEP GUARANTEES STABILITY AS DT 0.025!!## 
 tau= 0.1  #10     # constant time delay (=10dt)
 obsgrid = 4  #number of observations at analysis time (1=all observed, 2=every other observed, 3=half state observed, 4=1 variable)
-ns = 2  #number of time steps between obs
+ns = 10  #number of time steps between obs
 g = 10 #0.1      # coupling term
 
 # Choose random seed - With the seed reset,same numbers will appear every time 
@@ -99,7 +99,7 @@ print 'observations created'
 # Creating the DM-dimensional time-delay vectors
 # data vector Y
 # Creating DM-dimensional map from physical space to delay embedding space - vector S
-DM = 5
+DM = 10
 Y = np.zeros(DM)            
 S = np.zeros(DM)            
 
@@ -133,6 +133,9 @@ scount = 0
 SE = 0
 countse = 1
 
+pinv_tol = 2.2204e-16
+max_pinv_rank = N
+
 ##for t in range(10, run):
 for t in range(run):
     if (t == tobs[mcn]): 
@@ -141,19 +144,38 @@ for t in range(run):
     
         for m in range(t,ldelay+1):            
             if m == t:
-                random = np.zeros(N)
-                x[:,m+1] = mod.lorenz96(x[:,m],random,dt) 
-    
-                dsdx[scount,:] = Jac[0,:] 
+                ###random = np.zeros(N)
+                ###x[:,m+1] = mod.lorenz96(x[:,m],random,dt) 
                 
-                dfdx = mod.df(x[:,m])
-                Jac = Jac + dt*(np.dot(dfdx,Jac))
+                #dsdx[scount,:] = Jac[0,:] 
+                
+                dsdx[scount,:] = Jac0[0,:] 
+                Jac = Jac0
+
+                ###dfdx = mod.df(x[:,m])
+                ###Jac = Jac + dt*(np.dot(dfdx,Jac))                
+                
+                #dfdx = mod.rk4_J2(x[:,m],dfdx,dt)
+                #Jac = np.dot(dfdx,Jac)
+
+                Jacsize = N**2
+                Jacv = Jac.reshape(Jacsize) 
+                Jacvec = Jacv.reshape(Jacsize,1)
+                dxdt = mod.dxdt(x[:,m],Jacvec,N,dt)
+                xtran = mod.rk4(dxdt,dt)
+                x[:,m+1] = xtran[0:N]
+                #print 'Jacvec size', Jacvec.shape
+                #print 'x size', x[:,m].shape
+                #Jac = mod.rk4_J(x[:,m],Jacvec,dt)
+                #print 'Jac 10th at', m, 'is', Jac 
                 
                 #Jacvec = mod.rk4_J(x[:,m],dt) 
                 #Jac = Jacvec.reshape(N,N)
                 #Jaclast = Jac 
                 #dflast = dfdx               
                 #Jac = Jaclast + dt*(np.dot(dflast,Jaclast))
+                #Jac = dt*(np.dot(dfdx,Jac))
+                
                 #dfdx = mod.df(x[:,m+1])
                 #Jac = Jaclast + 0.5*dt*(np.dot(dfdx,Jac)-(np.dot(dflast,Jaclast)))                 
                 #Jac = Jac + 0.5*dt*(3*(np.dot(dfdx,Jac)-(np.dot(dflast,Jaclast))))            
@@ -162,20 +184,33 @@ for t in range(run):
             else:
                 random = np.zeros(N)
     
-                x[:,m+1] = mod.lorenz96(x[:,m],random,dt)  
+                #x[:,m+1] = mod.lorenz96(x[:,m],random,dt)  
     
-                dfdx = mod.df(x[:,m])
-                Jac = Jac + dt*(np.dot(dfdx,Jac))
+                ###dfdx = mod.df(x[:,m])
+                ###Jac = Jac + dt*(np.dot(dfdx,Jac))
+
+                #dfdx = mod.rk4_J2(x[:,m],dfdx,dt)
+                #Jac = np.dot(dfdx,Jac)
+                
+                Jacsize = N**2
+                Jacv = Jac.reshape(Jacsize) 
+                Jacvec = Jacv.reshape(Jacsize,1)
+                dxdt = mod.dxdt(x[:,m],Jacvec,N,dt)
+                xtran = mod.rk4(dxdt,dt)
+                x[:,m+1] = xtran[0:N]
+                #Jac = mod.rk4_J(x[:,m],Jacvec,dt)
                 
                 #Jacvec = mod.rk4_J(x[:,m],dt) 
                 #Jac = Jacvec.reshape(N,N)
                 #Jaclast = Jac 
                 #dflast = dfdx               
                 #Jac = Jaclast + dt*(np.dot(dflast,Jaclast))
+                #Jac = dt*(np.dot(dfdx,Jac))
+                
                 #dfdx = mod.df(x[:,m+1])
                 #Jac = Jaclast + 0.5*dt*(np.dot(dfdx,Jac)-(np.dot(dflast,Jaclast)))                 
                 #Jac = Jac + 0.5*dt*(3*(np.dot(dfdx,Jac)-(np.dot(dflast,Jaclast))))                
-                
+                #print 'Inner loop Jac at', m, 'is', Jac 
                 
                 newcount = (count+1)*ns
                 if (m+1 == newcount):          
@@ -189,8 +224,24 @@ for t in range(run):
     
             Y[d] = y[:,td]                 
             S[d] = x[0,td]                
-                
-        dxds = np.linalg.pinv(dsdx)
+        
+        #print 'dsdx', dsdx        
+        #dxds = np.linalg.pinv(dsdx)
+        U, G, V = mod.svd(dsdx)
+        for k in range(len(G)):
+            mask = np.ones(len(G))        
+            if G[k] >= pinv_tol:
+            #for G[k] >= pinv_tol:        
+            #if float(G[k]) < pinv_tol:
+                mask[k] = 1
+            else:
+                mask[k] = 0
+        r = min(max_pinv_rank,sum(mask)) 
+        Ginv = G[:r]**(-1) 
+        Ginv = np.diag(Ginv)
+        dxds = np.dot(V[:,:r],Ginv)   
+        dxds = np.dot(dxds,(np.transpose(U[:,:r]))) 
+
         dsdx = np.zeros([DM,N]) 
         
     
@@ -224,16 +275,38 @@ for t in range(run):
     
     else:
         random = np.zeros(N)
-        x[:,t+1] = mod.lorenz96(x[:,t],random,dt)  
-    
-        dfdx = mod.df(x[:,t])
-        Jac = Jac + dt*(np.dot(dfdx,Jac))
-                
+        
+        ###x[:,t+1] = mod.lorenz96(x[:,t],random,dt)  
+        ###print 'New Jac for intermediate', Jac
+        ###dfdx = mod.df(x[:,t])
+        ###Jac = Jac + dt*(np.dot(dfdx,Jac))
+
+        Jacsize = N**2
+        Jacv = Jac.reshape(Jacsize) 
+        Jacvec = Jacv.reshape(Jacsize,1)
+        #print 'Jacvec shape', Jacvec.shape
+        #print 'Jacvec[:,1] shape', Jacvec[:].shape
+        #print 'x[:,m] shape', x[:,m].shape
+        dxdt = mod.dxdt(x[:,t],Jacvec,N,dt)
+        #print 'Dxdt is', dxdt
+        #print 'Dxdt shape is', dxdt.shape
+        xtran = mod.rk4(dxdt,dt)
+        #print 'xtran', xtran
+        x[:,t+1] = xtran[0:N]
+        #dfdx = mod.rk4_J2(x[:,t],dfdx,dt)
+        #Jac = np.dot(dfdx,Jac)
+        #Jacsize = N**2
+        #Jacvec = Jac.reshape(Jacsize) 
+        #print 'Jacvec size', Jacvec.shape
+        #print 'x size', x[:,t].shape
+        #Jac = mod.rk4_J(x[:,t],Jacvec,dt)
+        #print 'Intermediate Jac at', t, 'is', Jac        
         #Jacvec = mod.rk4_J(x[:,m],dt) 
         #Jac = Jacvec.reshape(N,N)
         
         #Jactn = Jac 
-        #Jac = Jac + dt*(np.dot(dfdx,Jac))
+        
+        #Jac = dt*(np.dot(dfdx,Jac))
         #dflast = np.copy(dfdx)    
 
         #Jaclast = Jac

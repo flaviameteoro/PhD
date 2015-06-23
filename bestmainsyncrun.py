@@ -42,16 +42,16 @@ force = np.zeros(N)
 
 #spin up
 F=8.17
-######xhulp[:,0] = F          
-######pert = 0.05
-######pospert = np.ceil(N/2.0)-1
-######xhulp[pospert,0] = F+pert
-######spinup=1999
-######for j in range(spinup):
-######    force = np.zeros(N)
-######    xhulp[:,j+1] = mod.lorenz96(xhulp[:,j],force,dt)  
-######xtrue[:,0] = xhulp[:,spinup]
-xtrue[:,0] = np.random.rand(N)
+xhulp[:,0] = F         
+pert = 0.05
+pospert = np.ceil(N/2.0)-1
+xhulp[pospert,0] = F+pert
+spinup=1999
+for j in range(spinup):
+    force = np.zeros(N)
+    xhulp[:,j+1] = mod.lorenz96(xhulp[:,j],force,dt)   
+xtrue[:,0] = xhulp[:,spinup]
+
 for j in range(J):
    
     force = np.zeros(N)                                 
@@ -108,12 +108,12 @@ S = np.zeros(DM)
 # Defining initial x, dF/dx and J    
 x = np.zeros([N,J+1])              
 # Aplying randomness to x, not to be equal to xtrue 
-#random = np.random.randn(N)
-#x[:,0] = xtrue[:,0] + random
-#dfdx = np.zeros([N,N]) 
-randomini = np.random.rand(N)-0.5
-x[:,0] = xtrue[:,0] + randomini
+random = np.random.randn(N)
+x[:,0] = xtrue[:,0] + random
 dfdx = np.zeros([N,N]) 
+#randomini = np.random.rand(N)-0.5
+#x[:,0] = xtrue[:,0] + randomini
+#dfdx = np.zeros([N,N]) 
 # Creating initial condition for J (Jab = 1 when a=b)
 Jac = np.zeros([N,N])                 
 for i in range(N):
@@ -127,7 +127,7 @@ dxds = np.zeros([N,DM])
 # Main loop        
 mcn = 0
 summation = np.zeros(N)
-run = 3000
+run = 1000
 count = 1
 integ = DM*ns   
 differ = np.zeros(DM)  
@@ -148,33 +148,19 @@ for t in range(run):
                 x[:,m+1] = mod.lorenz96(x[:,m],random,dt) 
     
                 dsdx[scount,:] = Jac[0,:] 
-
                 dfdx = mod.df(x[:,m])
+    
                 Jac = Jac + dt*(np.dot(dfdx,Jac))   
-                #Jacsize = N**2
-                #Jacv = Jac.reshape(Jacsize) 
-                #Jacvec = Jacv.reshape(Jacsize,1)
-                #dxdt = mod.dxdt(x[:,m],Jacvec,N,dt)
-                #xtran = mod.rk4(dxdt,dt)
-                #x[:,m+1] = xtran[0:N]
-                #Jact = xtran[N:]
-                #Jac = Jact.reshape(N,N)    
-
+                    
                 scount = scount + 1
             else:
                 random = np.zeros(N)
-                x[:,m+1] = mod.lorenz96(x[:,m],random,dt) 
+    
+                x[:,m+1] = mod.lorenz96(x[:,m],random,dt)  
     
                 dfdx = mod.df(x[:,m])
+    
                 Jac = Jac + dt*(np.dot(dfdx,Jac))   
-                #Jacsize = N**2
-                #Jacv = Jac.reshape(Jacsize) 
-                #Jacvec = Jacv.reshape(Jacsize,1)
-                #dxdt = mod.dxdt(x[:,m],Jacvec,N,dt)
-                #xtran = mod.rk4(dxdt,dt)
-                #x[:,m+1] = xtran[0:N]
-                #Jact = xtran[N:]
-                #Jac = Jact.reshape(N,N)    
                 
                 Jaclast = Jac
                 newcount = (count+1)*ns
@@ -190,7 +176,7 @@ for t in range(run):
             Y[d] = y[:,td]                 
             S[d] = x[0,td]                
                 
-        pinv_tol = 2.2204e-3  # CHANGING THIS TO e-5, e.g., MAKES SE DECREASE A LITTLE(SEE PG 7, REY 2ND ARTICLE)
+        pinv_tol = 2.2204e-16  # CHANGING THIS TO e-5, e.g., MAKES SE DECREASE A LITTLE(SEE PG 7, REY 2ND ARTICLE)
         dxds = np.linalg.pinv(dsdx,rcond=pinv_tol)        
         #dxds = np.linalg.pinv(dsdx)
         dsdx = np.zeros([DM,N]) 
@@ -245,8 +231,8 @@ for t in range(run):
         random = np.zeros(N)
     
         x[:,t+1] = x[:,t] + dt*(x[:,t] + coup)    
-        ###xtran = x[:,t] + coup
-        ###x[:,t+1] = mod.lorenz96(xtran,random,dt) 
+        ####xtran = x[:,t] + coup
+        ####x[:,t+1] = mod.lorenz96(xtran,random,dt) 
     
         for d in range(t+1):
             #dd = np.zeros([N,t+1]) 
@@ -262,18 +248,11 @@ for t in range(run):
     
     else:
         random = np.zeros(N)
-        x[:,t+1] = mod.lorenz96(x[:,t],random,dt) 
+        x[:,t+1] = mod.lorenz96(x[:,t],random,dt)  
     
         dfdx = mod.df(x[:,t])
+    
         Jac = Jac + dt*(np.dot(dfdx,Jac))   
-        #Jacsize = N**2
-        #Jacv = Jac.reshape(Jacsize) 
-        #Jacvec = Jacv.reshape(Jacsize,1)
-        #dxdt = mod.dxdt(x[:,t],Jacvec,N,dt)
-        #xtran = mod.rk4(dxdt,dt)
-        #x[:,t+1] = xtran[0:N]
-        #Jact = xtran[N:]
-        #Jac = Jact.reshape(N,N)    
             
         Jactn = Jac
 
