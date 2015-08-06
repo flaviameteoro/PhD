@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 import model as mod
 
 
-N = 10000
+N = 1500
 Obs = 100
 dt = 0.01    #original value=0.01
-fc=14000
+fc=3000
 
 
 
@@ -38,7 +38,7 @@ for i in range(L):
 K = 1.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
 Ks = 1.e0*np.diag(np.ones([L*M]))  
 
-pinv_tol =  (np.finfo(float).eps)*max((M,D))#apparently same results as only 2.2204e-16
+pinv_tol =  (np.finfo(float).eps)#*max((M,D))#apparently same results as only 2.2204e-16
 max_pinv_rank = D
 
 
@@ -80,10 +80,10 @@ y = np.zeros([L,N])
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,1.2680e-04,N)-6.34e-05
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,1.2680e-04,N)-9.34e-05  #(out of zero mean! so tiny it's almost zero)
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,1.8680e-04,N)-9.34e-05
-y = np.dot(h,xtrue[:,:N]) + np.random.normal(0,6.34e-05,N)               # gaussian distribution
 
 # Noise that runs perfect until time step 1500 (for seed=37) and runs totally ok for dt=0.005!!!!
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.001,N+1)-0.0005
+y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.001,N)-0.0005
+#y = np.dot(h,xtrue[:,:N]) + np.random.normal(0,0.0005,N)
 
 # Bad noise values for y (for seed=37)
 #y = np.dot(h,xtrue) + np.random.rand(N+1)-0.5
@@ -115,7 +115,7 @@ Jac0 = np.copy(Jac)
 
 
 
-run = 9900
+run = 1400
 #fcrun = run + 2000
 
 for n in range(1,run+1):
@@ -135,35 +135,25 @@ for n in range(1,run+1):
         for i in range(1,int(nTau)+1):
             tt = t + dt*(i-1+(m-1)*nTau)
             
-            ##Jacsize = D**2
-            ##Jacv = Jac.reshape(Jacsize)       # creates an array (Jacsize,)
-            ##Jacvec = Jacv.reshape(Jacsize,1)  # creates an array (Jacsize,1)
-            ##dxdt = mod.dxdt(xx,Jacvec,D,dt)
-            ##xtran = mod.rk4(dxdt,dt)
-            ##xx = xtran[0:D]
-            ##print 'n=', n, 'xx at m', m, 'is', xx
-            ##Jact = xtran[D:]
-            ##Jac = Jact.reshape(D,D)
+            #Jac calculation with Runge-Kutta4 scheme
+            ####Jacsize = D**2
+            ####Jacv = Jac.reshape(Jacsize)       # creates an array (Jacsize,)
+            ####Jacvec = Jacv.reshape(Jacsize,1)  # creates an array (Jacsize,1)
+            ####Jac = mod.rk4_J3(Jacvec,D,xx,dt)
             
+                                 
+            #Jac calculation with Euler scheme
             dfdx = mod.df(xx)
+            #print 'dfdx', dfdx
+            #print 'Dfdx min:', np.min(dfdx),'max:', np.max(dfdx)
+            Jac = Jac + dt*(np.dot(dfdx,Jac))
+            #Jac = np.dot(dfdx,Jac)
+            #Jac = dt*(np.dot(dfdx,Jac))           
+            
+
             random = np.zeros(D)
             #random = np.random.rand(D)-0.5
             xx = mod.lorenz96(xx,random,dt) 
-            Jac = Jac + dt*(np.dot(dfdx,Jac))
-            ###Jac = np.dot(dfdx,Jac)
-            #print 'xx at m', m, 'is', xx
-            #dfdx = mod.df(xx)
-            #print 'dfdx', dfdx
-            
-            #print 'n=', n, 'xx at m', m, 'is', xx
-            #####Jac = np.dot(dfdx,Jac)  
-            #print 'Jac', Jac
-            #########Jacsize = D**2
-            #########Jacv = Jac.reshape(Jacsize) 
-            #########Jacvec = Jacv.reshape(Jacsize,1)
-            #########f,Jac = mod.dxdt(xx,Jacvec,D,dt)
-            #f = dxdt[0:D]
-            #########xx = mod.rk4(f,dt)
             
             #print 'n=', n, 'xx at m', m, 'is', xx
             #print 'xx shape is', xx.shape
