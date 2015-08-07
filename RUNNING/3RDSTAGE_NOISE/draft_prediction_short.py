@@ -21,9 +21,11 @@ nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
 
+#r=18 #for x[:,0] = xtrue[:,0], both for 20 variables
+#r=37 #for original code 
+#r=44  #for RK4 and 0.0005 uniform noise 
 
-r=37    #r=37 for original code and r=18 for x[:,0] = xtrue[:,0], both for 20 variables
-np.random.seed(r)  
+#np.random.seed(r)  
 
 
 
@@ -81,16 +83,16 @@ y = np.zeros([L,N])
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,1.2680e-04,N)-9.34e-05  #(out of zero mean! so tiny it's almost zero)
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,1.8680e-04,N)-9.34e-05
 
-# Noise that runs perfect until time step 1500 (for seed=37) and runs totally ok for dt=0.005!!!!
-y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.001,N)-0.0005
-#y = np.dot(h,xtrue[:,:N]) + np.random.normal(0,0.0005,N)
+# Noise that runs perfect until time step 1500 (for seed=37) and until 4000 (for seed=44) and runs totally ok for dt=0.005!!!!
+#y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.001,N)-0.0005
+y = np.dot(h,xtrue[:,:N]) + np.random.normal(0,0.0005,N)                   # gaussian distribution
 
 # Bad noise values for y (for seed=37)
-#y = np.dot(h,xtrue) + np.random.rand(N+1)-0.5
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.04,N+1)-0.02
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.01,N+1)-0.005
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.0022,N+1)-0.0011
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.002,N+1)-0.001
+#y = np.dot(h,xtrue[:,:N]) + np.random.rand(N)-0.5
+#y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.04,N)-0.02
+#y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.01,N)-0.005
+#y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.0022,N)-0.0011
+#y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.002,N)-0.001
 
 #print 'y', y
 #print 'xtrue', xtrue
@@ -136,20 +138,19 @@ for n in range(1,run+1):
             tt = t + dt*(i-1+(m-1)*nTau)
             
             #Jac calculation with Runge-Kutta4 scheme
-            ####Jacsize = D**2
-            ####Jacv = Jac.reshape(Jacsize)       # creates an array (Jacsize,)
-            ####Jacvec = Jacv.reshape(Jacsize,1)  # creates an array (Jacsize,1)
-            ####Jac = mod.rk4_J3(Jacvec,D,xx,dt)
+            Jacsize = D**2
+            Jacv = Jac.reshape(Jacsize)       # creates an array (Jacsize,)
+            Jacvec = Jacv.reshape(Jacsize,1)  # creates an array (Jacsize,1)
+            Jac = mod.rk4_J3(Jacvec,D,xx,dt)
             
                                  
             #Jac calculation with Euler scheme
-            dfdx = mod.df(xx)
-            #print 'dfdx', dfdx
-            #print 'Dfdx min:', np.min(dfdx),'max:', np.max(dfdx)
-            Jac = Jac + dt*(np.dot(dfdx,Jac))
+            ###dfdx = mod.df(xx)
+            ###Jac = Jac + dt*(np.dot(dfdx,Jac))
             #Jac = np.dot(dfdx,Jac)
             #Jac = dt*(np.dot(dfdx,Jac))           
-            
+            #print 'dfdx', dfdx
+            #print 'Dfdx min:', np.min(dfdx),'max:', np.max(dfdx)
 
             random = np.zeros(D)
             #random = np.random.rand(D)-0.5

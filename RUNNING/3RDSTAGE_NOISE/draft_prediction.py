@@ -4,29 +4,34 @@ import matplotlib.pyplot as plt
 #import functions as m
 import model as mod
 
-
-N = 10000
+################################# Defining parameters ######################################
+N = 10000    #number of time steps
 Obs = 100
-dt = 0.01    #original value=0.01
-fc=14000
+dt = 0.01    #time step - original value=0.01
+fc=14000     #final forecast time step 
 
 
 
-D = 20 
-F=8.17
+D = 20       #number of state variables
+F=8.17       #forcing (for Lorenz model)
 
-M = 10
+M = 10       #number of time-delays
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
 
+########################### Using seed to recreate experiment ###############################
+#for 20 variables:
 
-r=37    #r=37 for original code and r=18 for x[:,0] = xtrue[:,0], both for 20 variables
+#r=18 #for x[:,0] = xtrue[:,0]
+#r=37 #for original code 
+r=44  #for RK4 and 0.0005 uniform noise 
+
 np.random.seed(r)  
 
 
-
+########################### Setting the observation operator ################################
 observed_vars = range(1)    
 L = len(observed_vars) 
 h = np.zeros([L,D])       
@@ -34,21 +39,21 @@ for i in range(L):
     h[i,observed_vars[i]] = 1.0   
 
 
-
+############################# Defining coupling constant matrices ###########################
 K = 1.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
 Ks = 1.e0*np.diag(np.ones([L*M]))  
 
-pinv_tol =  (np.finfo(float).eps)*max((M,D))#apparently same results as only 2.2204e-16
+###################### Defining information for pseudoinverse calculation ###################
+pinv_tol =  (np.finfo(float).eps)*max((M,D))  #apparently same results as only 2.2204e-16
 max_pinv_rank = D
 
 
-
+################################## Creating the truth #######################################
 xtrue = np.zeros([D,fc+1])
 xtrue[:,0] = np.random.rand(D)  #Changed to randn! It runned for both 10 and 20 variables
 print 'xtrue[:,0]', xtrue[:,0]
 dx0 = np.random.rand(D)-0.5     #Changed to randn! It runned for both 10 and 20 variables
 ##dx0 = np.random.rand(D)
-
 
 
 x = np.zeros([D,fc+1])      
@@ -70,7 +75,7 @@ x[:,1] = x[:,0]         # try to sort python problem for 0 beginning index
 print 'truth created'
 
 
-
+################################## Creating the observations ###################################
 y = np.zeros([L,N]) 
 # No noise for y (ok for seed=37)
 #y = np.dot(h,xtrue[:,:N]) 
@@ -78,25 +83,26 @@ y = np.zeros([L,N])
 
 # Good noise values for y (for seed=37)
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,1.2680e-04,N)-6.34e-05
-#y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,1.2680e-04,N)-9.34e-05  #(out of zero mean! so tiny it's almost zero)
+#y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,1.2680e-04,N)-9.34e-05  #(out of zero mean! so tiny it's almost zero?)
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,1.8680e-04,N)-9.34e-05
-y = np.dot(h,xtrue[:,:N]) + np.random.normal(0,6.34e-05,N)               # gaussian distribution
+#y = np.dot(h,xtrue[:,:N]) + np.random.normal(0,6.34e-05,N)               # gaussian distribution
 
-# Noise that runs perfect until time step 1500 (for seed=37) and runs totally ok for dt=0.005!!!!
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.001,N+1)-0.0005
+# Noise that runs perfect until time step 1500 (for seed=37) and until 4000 (for seed=44) and runs totally ok for dt=0.005!!!!
+y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.001,N)-0.0005
+#y = np.dot(h,xtrue[:,:N]) + np.random.normal(0,0.0005,N)                   # gaussian distribution
 
 # Bad noise values for y (for seed=37)
-#y = np.dot(h,xtrue) + np.random.rand(N+1)-0.5
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.04,N+1)-0.02
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.01,N+1)-0.005
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.0022,N+1)-0.0011
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.002,N+1)-0.001
+#y = np.dot(h,xtrue[:,:N]) + np.random.rand(N+1)-0.5
+#y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.04,N)-0.02
+#y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.01,N)-0.005
+#y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.0022,N)-0.0011
+#y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.002,N)-0.001
 
 #print 'y', y
 #print 'xtrue', xtrue
 
 
-
+#################################### Defining arrays ##############################################
 Y = np.zeros([1,M])            
 S = np.zeros([1,M]) 
 dsdx = np.zeros([M,D])         
@@ -106,7 +112,7 @@ xx = np.zeros([D,1])
 xtran = np.zeros([D,1]) 
 
 
-
+#################################### Defining the Jacobian ##########################################
 Jac = np.zeros([D,D])                 
 for i in range(D):
     Jac[i,i] = 1.
@@ -114,7 +120,7 @@ for i in range(D):
 Jac0 = np.copy(Jac)   
 
 
-
+#################################### Main loop for estimates ###########################################
 run = 9900
 #fcrun = run + 2000
 
@@ -135,49 +141,40 @@ for n in range(1,run+1):
         for i in range(1,int(nTau)+1):
             tt = t + dt*(i-1+(m-1)*nTau)
             
-            ##Jacsize = D**2
-            ##Jacv = Jac.reshape(Jacsize)       # creates an array (Jacsize,)
-            ##Jacvec = Jacv.reshape(Jacsize,1)  # creates an array (Jacsize,1)
-            ##dxdt = mod.dxdt(xx,Jacvec,D,dt)
-            ##xtran = mod.rk4(dxdt,dt)
-            ##xx = xtran[0:D]
-            ##print 'n=', n, 'xx at m', m, 'is', xx
-            ##Jact = xtran[D:]
-            ##Jac = Jact.reshape(D,D)
+            #Jac calculation with Runge-Kutta4 scheme
+            Jacsize = D**2
+            Jacv = Jac.reshape(Jacsize)       # creates an array (Jacsize,)
+            Jacvec = Jacv.reshape(Jacsize,1)  # creates an array (Jacsize,1)
+            Jac = mod.rk4_J3(Jacvec,D,xx,dt)
             
-            dfdx = mod.df(xx)
+                                 
+            #Jac calculation with Euler scheme
+            #####dfdx = mod.df(xx)
+            #####Jac = Jac + dt*(np.dot(dfdx,Jac))
+            #Jac = np.dot(dfdx,Jac)
+            #Jac = dt*(np.dot(dfdx,Jac))           
+            #print 'dfdx', dfdx
+            #print 'Dfdx min:', np.min(dfdx),'max:', np.max(dfdx)
+
             random = np.zeros(D)
             #random = np.random.rand(D)-0.5
             xx = mod.lorenz96(xx,random,dt) 
-            Jac = Jac + dt*(np.dot(dfdx,Jac))
-            ###Jac = np.dot(dfdx,Jac)
-            #print 'xx at m', m, 'is', xx
-            #dfdx = mod.df(xx)
-            #print 'dfdx', dfdx
-            
-            #print 'n=', n, 'xx at m', m, 'is', xx
-            #####Jac = np.dot(dfdx,Jac)  
-            #print 'Jac', Jac
-            #########Jacsize = D**2
-            #########Jacv = Jac.reshape(Jacsize) 
-            #########Jacvec = Jacv.reshape(Jacsize,1)
-            #########f,Jac = mod.dxdt(xx,Jacvec,D,dt)
-            #f = dxdt[0:D]
-            #########xx = mod.rk4(f,dt)
             
             #print 'n=', n, 'xx at m', m, 'is', xx
             #print 'xx shape is', xx.shape
-
+        
+        #Defining S (map from physical space to a delay embedding space) and Y(data vector)
         idxs = L*(m-1) #+ (L)    # attention to this (L)term, which should be (1:L) in case of more obs
         #print 'idxs', idxs        
-        S[:,idxs] = np.dot(h,xx)
+        S[:,idxs] = np.dot(h,xx)   
         #print 'S at m', m, 'is', S.shape
         #idy = n+(m-1)*nTau
         Y[:,idxs] = y[:,n+(m-1)*nTau]   # attention to y(0,...), which should increase in case of more obs
         dsdx[idxs,:] = np.dot(h,Jac)
     #print 'dsdx', dsdx
 
-    dxds = np.linalg.pinv(dsdx,rcond=pinv_tol)    
+    #Calculating the pseudoinverse 
+    dxds = np.linalg.pinv(dsdx,rcond=pinv_tol) #rcond from python function already does Matlab's code job    
     #dxds = dxds.round(decimals=4)     # Applied this as it was appearing in matlab code (1st row 1 0 0 0...)
     
     #U, G, V = mod.svd(dsdx)
@@ -201,6 +198,8 @@ for n in range(1,run+1):
     #print 'dxds', dxds 
     #print 'Y', Y
     #print 'S', S
+
+    #Calculating the whole coupling term
     dx1 = np.dot(K,dxds)
     dx2 = np.dot(Ks,np.transpose((Y-S)))
     dx = np.dot(dx1,dx2)
@@ -208,6 +207,7 @@ for n in range(1,run+1):
     #print 'dx', dx
     #print 'x[:,n]shape', x[:,n].shape
     
+    #Integrating the equation with coupling
     random = np.zeros(D)
     #xtran2 = x[:,n] + dx                                           #n3m4
     #x[:,n+1] = mod.lorenz96(xtran2,random,dt) 
@@ -250,6 +250,7 @@ for n in range(1,run+1):
         
     #print 'x[:,n+1] at', n+1, 'is', x[:,n+1]
 
+    #Calculating SE (synchronisation error)
     ##if np.mod(n+1,10) == 1:
         ##SE = np.zeros([D,n+1])
         ##for d in range(n+1):
@@ -270,11 +271,14 @@ for n in range(1,run+1):
 
 plt.show()
 
+################################ Prediction ############################################
 random = np.zeros(D)
 for d in range(run+1,fc):
     x[:,d+1] = mod.lorenz96(x[:,d],random,dt) 
 
-##############################Plotting#########################################
+
+
+############################## Plotting trajectories #######################################
 
 plt.figure(figsize=(12, 10)).suptitle('Full sync - J reinitialized')
 for i in range(D/3):
