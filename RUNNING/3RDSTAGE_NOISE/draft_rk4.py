@@ -12,12 +12,18 @@ dt = 0.01    #original value=0.01
 D = 20 
 F=8.17
 
-M = 12
+M = 10
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
-r=37    #r=37 for original code and r=18 for x[:,0] = xtrue[:,0], both for 20 variables
+#for 20 variables:
+
+#r=18 #for x[:,0] = xtrue[:,0]
+#r=37 #for original code 
+#r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
+r=39   #for RK4 and 0.0005 uniform noise (for M = 12)
+
 np.random.seed(r)  
 
 observed_vars = range(1)    
@@ -55,23 +61,25 @@ x[:,1] = x[:,0]         # try to sort python problem for 0 beginning index
 print 'truth created'
 
 y = np.zeros([L,N+1]) 
-# No noise for y (ok for seed=37)
-y = np.dot(h,xtrue) 
+### No noise for y (ok for seed=37)
+#y = np.dot(h,xtrue) 
 
-# Good noise values for y (for seed=37)
+### Good noise values for y (for seed=37)
 #y = np.dot(h,xtrue) + np.random.uniform(0,1.2680e-04,N+1)-6.34e-05
 #y = np.dot(h,xtrue) + np.random.uniform(0,1.2680e-04,N+1)-9.34e-05  #(out of zero mean!)
 #y = np.dot(h,xtrue) + np.random.uniform(0,1.8680e-04,N+1)-9.34e-05
 
-# Noise that runs perfect until time step 1500 (for seed=37) and runs totally ok for dt=0.005!!!!
+### Noise that runs perfect until time step 1500 (for seed=37) 
+# and runs totally ok for seed=44!!!!
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.001,N+1)-0.0005
+#y = np.dot(h,xtrue[:,:N]) + np.random.normal(0,0.0005,N)     
 
-# Bad noise values for y (for seed=37)
+### Bad noise values for y (for seed=37)
 #y = np.dot(h,xtrue) + np.random.rand(N+1)-0.5
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.04,N+1)-0.02
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.01,N+1)-0.005
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.0022,N+1)-0.0011
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.002,N+1)-0.001
+y = np.dot(h,xtrue) + np.random.uniform(0,0.002,N+1)-0.001
 
 #print 'y', y
 #print 'xtrue', xtrue
@@ -90,7 +98,7 @@ for i in range(D):
 
 Jac0 = np.copy(Jac)   
 
-run = 9800
+run = 9900
 
 for n in range(1,run+1):
     t = (n-1)*dt
@@ -156,30 +164,44 @@ for n in range(1,run+1):
         dsdx[idxs,:] = np.dot(h,Jac)
     #print 'dsdx', dsdx
 
-    dxds = np.linalg.pinv(dsdx,rcond=pinv_tol)    
+    ########dxds = np.linalg.pinv(dsdx,rcond=pinv_tol)    
     #dxds = dxds.round(decimals=4)     # Applied this as it was appearing in matlab code (1st row 1 0 0 0...)
     
-    #U, G, V = mod.svd(dsdx)
-    #print 'G', G
-    ###mask = np.ones(len(G)) 
-    ###for k in range(len(G)):
+    U, G, V = mod.svd(dsdx)
+    #print 'U', U.shape
+    print 'G', G                       # All positive values, for good or bad runs. 
+    #print 'V', V.shape
+    #print 'ln(G)', np.log(G)
+    mask = np.ones(len(G)) 
+    for k in range(len(G)):
         #mask = np.ones(len(G))        
-        ###if G[k] >= pinv_tol:
-            ###mask[k] = 1
-        ###else:
-            ###mask[k] = 0
+        if G[k] >= pinv_tol:
+            mask[k] = 1
+        else:
+            mask[k] = 0
         #print 'mask', mask
-    ###r = min(max_pinv_rank,sum(mask)) 
+    r = min(max_pinv_rank,sum(mask)) 
     #print 'r is', r
-    ###Ginv = G[:r]**(-1) 
-    #print 'Ginv1', Ginv  
+    g = G[:r]**(-1) 
+    #print 'g', g  
+    Ginv = np.zeros((M, D))
+    Ginv[:M, :M] = np.diag(g)
+    #print 'Ginv', Ginv 
     ###Ginv = np.diag(Ginv)
     #print 'Ginv2', Ginv    
-    ###dxds1 = np.dot(V[:,:r],Ginv)   
-    ###dxds = np.dot(dxds1,(np.transpose(U[:,:r])))  
+    dxds1 = np.dot((np.transpose(V[:,:])),(np.transpose(Ginv)))   
+    #print 'dxds1', dxds1.shape
+    dxds = np.dot(dxds1,(np.transpose(U[:,:r])))  
     #print 'dxds', dxds 
     #print 'Y', Y
     #print 'S', S
+    
+    svmin = np.min(G)
+    print 'Smallest sing value:', svmin              #no influence until now...(around e-03)
+    svmax = np.max(G)        
+    observ = svmin/svmax
+    #print 'observability', observ                   #no influence until now...(between e-05 and e-04)
+
     dx1 = np.dot(K,dxds)
     dx2 = np.dot(Ks,np.transpose((Y-S)))
     dx = np.dot(dx1,dx2)

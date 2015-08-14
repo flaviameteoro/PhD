@@ -48,9 +48,11 @@ dx0 = np.random.rand(D)-0.5     #Changed to randn! It runned for both 10 and 20 
 x = np.zeros([D,N+1])   
 z = np.zeros([D,N+1])      
 w = np.zeros([D,N+1])      
+k = np.zeros([D,N+1])      
 x[:,0] = xtrue[:,0] #+ dx0
 z[:,0] = x[:,0]
 w[:,0] = x[:,0]
+k[:,0] = x[:,0]
 
 print 'x[:,0]', x[:,0]
 
@@ -100,34 +102,46 @@ run = 1000
 
 random = np.zeros(D)
 random2 = np.random.uniform(0,1.2680e-04,D)-6.34e-05
+
 random3 = np.random.uniform(0,0.001,D)-0.0005
-random4 = np.random.uniform(0,0.002,D)-0.001
-random5 = np.random.normal(0,0.0005,D)  
-random6 = 0.5
+random4 = np.random.normal(0,0.0001,D)  
+
+random5 = np.random.uniform(0,0.002,D)-0.001
+random6 = np.random.normal(0,0.001,D)  
+
+random7 = np.random.uniform(0,0.02,D)-0.01
+random8 = np.random.normal(0,0.01,D)  
+
+random9 = np.random.uniform(0,0.2,D)-0.1
+random10 = np.random.normal(0,0.1,D)  
+
 
 for n in range(run):
-    x[:,n+1] = mod.lorenz96(x[:,n],random,dt) 
-    z[:,n+1] = mod.lorenz96(z[:,n],random2,dt) 
-    w[:,n+1] = mod.lorenz96(w[:,n],random3,dt) 
+    x[:,n+1] = mod.lorenz96(x[:,n],random4,dt) 
+    z[:,n+1] = mod.lorenz96(z[:,n],random6,dt) 
+    w[:,n+1] = mod.lorenz96(w[:,n],random8,dt) 
+    #k[:,n+1] = mod.lorenz96(k[:,n],random8,dt) 
 
 #for d in range(run+1,fc):
 #    x[:,d+1] = mod.lorenz96(x[:,d],random,dt) 
 
 ##############################Plotting#########################################
 
-plt.figure(figsize=(12, 10)).suptitle('Lorenz free runs - Noise influence')
+plt.figure(figsize=(12, 10)).suptitle('Lorenz free runs - Noise influence - Gaussian distributions')
 for i in range(D/3):
     plt.subplot(np.ceil(D/8.0),2,i+1)
     plt.plot(x[i,:],'g',label='X')
     plt.hold(True)
     plt.plot(z[i,:],'m',label='Z')
     plt.hold(True)
-    plt.plot(w[i,:],'y',label='w')
+    plt.plot(w[i,:],'y',label='W')
     plt.hold(True)
+    #plt.plot(k[i,:],'c',label='k')
+    #plt.hold(True)
     plt.plot(xtrue[i,:],'b-',linewidth=2.0,label='truth')
     plt.hold(True)
 
-    plt.legend(['no_noise', 'e-05', 'e-04', 'truth'], ncol=4, prop={'size':10}, loc='upper left')
+    plt.legend(['e-04', 'e-03', 'e-02', 'truth'], ncol=4, prop={'size':10}, loc='upper left')
     
 plt.show()
     

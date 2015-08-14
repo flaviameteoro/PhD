@@ -8,7 +8,7 @@ import model as mod
 N = 10000    #number of time steps
 Obs = 100
 dt = 0.01    #time step - original value=0.01
-fc=14000     #final forecast time step 
+fc=13000     #final forecast time step 
 
 
 
@@ -25,9 +25,9 @@ print 'D=', D, 'variables and M=', M ,'time-delays'
 #for 20 variables:
 
 #r=18 #for x[:,0] = xtrue[:,0]
-#r=37 #for original code 
-r=44  #for RK4 and 0.0005 uniform noise 
-
+r=37 #for original code 
+#r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
+#r=39   #for RK4 and 0.0005 uniform noise (for M = 12)
 np.random.seed(r)  
 
 
@@ -77,21 +77,21 @@ print 'truth created'
 
 ################################## Creating the observations ###################################
 y = np.zeros([L,N]) 
-# No noise for y (ok for seed=37)
+#### No noise for y (ok for seed=37)
 #y = np.dot(h,xtrue[:,:N]) 
 #print 'y', y.shape
 
-# Good noise values for y (for seed=37)
-#y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,1.2680e-04,N)-6.34e-05
+#### Good noise values for y (for seed=37)
+y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,1.2680e-04,N)-6.34e-05
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,1.2680e-04,N)-9.34e-05  #(out of zero mean! so tiny it's almost zero?)
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,1.8680e-04,N)-9.34e-05
 #y = np.dot(h,xtrue[:,:N]) + np.random.normal(0,6.34e-05,N)               # gaussian distribution
 
-# Noise that runs perfect until time step 1500 (for seed=37) and until 4000 (for seed=44) and runs totally ok for dt=0.005!!!!
-y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.001,N)-0.0005
+#### Noise that runs perfect until time step 1500 (for seed=37) and until 4000 (for seed=44) and runs totally ok for dt=0.005!!!!
+#y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.001,N)-0.0005
 #y = np.dot(h,xtrue[:,:N]) + np.random.normal(0,0.0005,N)                   # gaussian distribution
 
-# Bad noise values for y (for seed=37)
+#### Bad noise values for y (for seed=37)
 #y = np.dot(h,xtrue[:,:N]) + np.random.rand(N+1)-0.5
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.04,N)-0.02
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.01,N)-0.005
@@ -173,28 +173,36 @@ for n in range(1,run+1):
         dsdx[idxs,:] = np.dot(h,Jac)
     #print 'dsdx', dsdx
 
-    #Calculating the pseudoinverse 
+    #Calculating the pseudoinverse through python function
     dxds = np.linalg.pinv(dsdx,rcond=pinv_tol) #rcond from python function already does Matlab's code job    
     #dxds = dxds.round(decimals=4)     # Applied this as it was appearing in matlab code (1st row 1 0 0 0...)
     
-    #U, G, V = mod.svd(dsdx)
-    #print 'G', G
-    ###mask = np.ones(len(G)) 
-    ###for k in range(len(G)):
+    #Calculating the pseudoinverse through svd calculation
+    U, G, V = mod.svd(dsdx)
+    #print 'U', U.shape
+    #print 'G', G                       # All positive values, for good or bad runs. 
+    #print 'V', V.shape
+    #print 'ln(G)', np.log(G)
+    mask = np.ones(len(G)) 
+    for k in range(len(G)):
         #mask = np.ones(len(G))        
-        ###if G[k] >= pinv_tol:
-            ###mask[k] = 1
-        ###else:
-            ###mask[k] = 0
+        if G[k] >= pinv_tol:
+            mask[k] = 1
+        else:
+            mask[k] = 0
         #print 'mask', mask
-    ###r = min(max_pinv_rank,sum(mask)) 
+    r = min(max_pinv_rank,sum(mask)) 
     #print 'r is', r
-    ###Ginv = G[:r]**(-1) 
-    #print 'Ginv1', Ginv  
+    g = G[:r]**(-1) 
+    #print 'g', g  
+    Ginv = np.zeros((M, D))
+    Ginv[:M, :M] = np.diag(g)
+    #print 'Ginv', Ginv 
     ###Ginv = np.diag(Ginv)
     #print 'Ginv2', Ginv    
-    ###dxds1 = np.dot(V[:,:r],Ginv)   
-    ###dxds = np.dot(dxds1,(np.transpose(U[:,:r])))  
+    dxds1 = np.dot((np.transpose(V[:,:])),(np.transpose(Ginv)))   
+    #print 'dxds1', dxds1.shape
+    dxds = np.dot(dxds1,(np.transpose(U[:,:r])))  
     #print 'dxds', dxds 
     #print 'Y', Y
     #print 'S', S

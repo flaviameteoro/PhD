@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import model as mod
 
 
-N = 1500
+N = 2000
 Obs = 100
 dt = 0.01    #original value=0.01
 fc=3000
@@ -22,10 +22,11 @@ print 'D=', D, 'variables and M=', M ,'time-delays'
 
 
 #r=18 #for x[:,0] = xtrue[:,0], both for 20 variables
-#r=37 #for original code 
-#r=44  #for RK4 and 0.0005 uniform noise 
+r=37 #for original code (for M = 10)
+#r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
+#r=39   #for RK4 and 0.0005 uniform noise (for M = 12)
 
-#np.random.seed(r)  
+np.random.seed(r)  
 
 
 
@@ -74,20 +75,21 @@ print 'truth created'
 
 
 y = np.zeros([L,N]) 
-# No noise for y (ok for seed=37)
-#y = np.dot(h,xtrue[:,:N]) 
+#### No noise for y (ok for seed=37)
+y = np.dot(h,xtrue[:,:N]) 
 #print 'y', y.shape
 
-# Good noise values for y (for seed=37)
+#### Good noise values for y (for seed=37)
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,1.2680e-04,N)-6.34e-05
+#y = np.dot(h,xtrue[:,:N]) + np.random.normal(0,6.34e-05,N)                 # gaussian distribution
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,1.2680e-04,N)-9.34e-05  #(out of zero mean! so tiny it's almost zero)
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,1.8680e-04,N)-9.34e-05
 
-# Noise that runs perfect until time step 1500 (for seed=37) and until 4000 (for seed=44) and runs totally ok for dt=0.005!!!!
+#### Noise that runs perfect until time step 1500 (for seed=37) and until 4000 (for seed=44) and runs totally ok for dt=0.005!!!!
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.001,N)-0.0005
-y = np.dot(h,xtrue[:,:N]) + np.random.normal(0,0.0005,N)                   # gaussian distribution
+#y = np.dot(h,xtrue[:,:N]) + np.random.normal(0,0.0005,N)                   # gaussian distribution
 
-# Bad noise values for y (for seed=37)
+#### Bad noise values for y (for seed=37)
 #y = np.dot(h,xtrue[:,:N]) + np.random.rand(N)-0.5
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.04,N)-0.02
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.01,N)-0.005
@@ -117,7 +119,7 @@ Jac0 = np.copy(Jac)
 
 
 
-run = 1400
+run = 1900
 #fcrun = run + 2000
 
 for n in range(1,run+1):
@@ -158,7 +160,11 @@ for n in range(1,run+1):
             
             #print 'n=', n, 'xx at m', m, 'is', xx
             #print 'xx shape is', xx.shape
-
+        
+        #U, G, V = mod.svd(Jac)
+        #print 'G', G.shape
+        #print 'ln(G)', np.log(G)
+        
         idxs = L*(m-1) #+ (L)    # attention to this (L)term, which should be (1:L) in case of more obs
         #print 'idxs', idxs        
         S[:,idxs] = np.dot(h,xx)
@@ -168,30 +174,38 @@ for n in range(1,run+1):
         dsdx[idxs,:] = np.dot(h,Jac)
     #print 'dsdx', dsdx
 
-    dxds = np.linalg.pinv(dsdx,rcond=pinv_tol)    
+    ####dxds = np.linalg.pinv(dsdx,rcond=pinv_tol)    
     #dxds = dxds.round(decimals=4)     # Applied this as it was appearing in matlab code (1st row 1 0 0 0...)
     
-    #U, G, V = mod.svd(dsdx)
-    #print 'G', G
-    ###mask = np.ones(len(G)) 
-    ###for k in range(len(G)):
+    U, G, V = mod.svd(dsdx)
+    #print 'U', U.shape
+    #print 'G', G                       # All positive values, for good or bad runs. 
+    #print 'V', V.shape
+    #print 'ln(G)', np.log(G)
+    mask = np.ones(len(G)) 
+    for k in range(len(G)):
         #mask = np.ones(len(G))        
-        ###if G[k] >= pinv_tol:
-            ###mask[k] = 1
-        ###else:
-            ###mask[k] = 0
+        if G[k] >= pinv_tol:
+            mask[k] = 1
+        else:
+            mask[k] = 0
         #print 'mask', mask
-    ###r = min(max_pinv_rank,sum(mask)) 
+    r = min(max_pinv_rank,sum(mask)) 
     #print 'r is', r
-    ###Ginv = G[:r]**(-1) 
-    #print 'Ginv1', Ginv  
+    g = G[:r]**(-1) 
+    #print 'g', g  
+    Ginv = np.zeros((M, D))
+    Ginv[:M, :M] = np.diag(g)
+    #print 'Ginv', Ginv 
     ###Ginv = np.diag(Ginv)
     #print 'Ginv2', Ginv    
-    ###dxds1 = np.dot(V[:,:r],Ginv)   
-    ###dxds = np.dot(dxds1,(np.transpose(U[:,:r])))  
+    dxds1 = np.dot((np.transpose(V[:,:])),(np.transpose(Ginv)))   
+    #print 'dxds1', dxds1.shape
+    dxds = np.dot(dxds1,(np.transpose(U[:,:r])))  
     #print 'dxds', dxds 
     #print 'Y', Y
     #print 'S', S
+    
     dx1 = np.dot(K,dxds)
     dx2 = np.dot(Ks,np.transpose((Y-S)))
     dx = np.dot(dx1,dx2)
