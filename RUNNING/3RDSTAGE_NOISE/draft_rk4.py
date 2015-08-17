@@ -20,9 +20,9 @@ print 'D=', D, 'variables and M=', M ,'time-delays'
 #for 20 variables:
 
 #r=18 #for x[:,0] = xtrue[:,0]
-#r=37 #for original code 
+r=37 #for original code 
 #r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
-r=39   #for RK4 and 0.0005 uniform noise (for M = 12)
+#r=39   #for RK4 and 0.0005 uniform noise (for M = 12)
 
 np.random.seed(r)  
 
@@ -32,11 +32,11 @@ h = np.zeros([L,D])
 for i in range(L):
     h[i,observed_vars[i]] = 1.0   
 
-K = 1.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
+K = 5.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
 Ks = 1.e0*np.diag(np.ones([L*M]))  
 
 pinv_tol =  (np.finfo(float).eps)#*max((M,D))#apparently same results as only 2.2204e-16
-max_pinv_rank = D
+max_pinv_rank = 8
 
 xtrue = np.zeros([D,N+1])
 xtrue[:,0] = np.random.rand(D)  #Changed to randn! It runned for both 10 and 20 variables
@@ -72,14 +72,21 @@ y = np.zeros([L,N+1])
 ### Noise that runs perfect until time step 1500 (for seed=37) 
 # and runs totally ok for seed=44!!!!
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.001,N+1)-0.0005
-#y = np.dot(h,xtrue[:,:N]) + np.random.normal(0,0.0005,N)     
+#y = np.dot(h,xtrue) + np.random.normal(0,0.0005,N+1)     
 
 ### Bad noise values for y (for seed=37)
 #y = np.dot(h,xtrue) + np.random.rand(N+1)-0.5
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.04,N+1)-0.02
+#y = np.dot(h,xtrue) + np.random.uniform(0,0.2,N+1)-0.1
+#y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.01,N+1)-0.005
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.0022,N+1)-0.0011
+###(for seed=18)
+y = np.dot(h,xtrue) + np.random.normal(0,0.01,N+1)  
+
+### Noise that runs perfect until time step 1800 and 2300 (for seed=18) 
 y = np.dot(h,xtrue) + np.random.uniform(0,0.002,N+1)-0.001
+#y = np.dot(h,xtrue) + np.random.uniform(0,0.2,N+1)-0.01
+#y = np.dot(h,xtrue) + np.random.normal(0,0.001,N+1)  
+
 
 #print 'y', y
 #print 'xtrue', xtrue
@@ -98,7 +105,7 @@ for i in range(D):
 
 Jac0 = np.copy(Jac)   
 
-run = 9900
+run = 500
 
 for n in range(1,run+1):
     t = (n-1)*dt
@@ -169,7 +176,7 @@ for n in range(1,run+1):
     
     U, G, V = mod.svd(dsdx)
     #print 'U', U.shape
-    print 'G', G                       # All positive values, for good or bad runs. 
+    #print 'G', G                       # All positive values, for good or bad runs. 
     #print 'V', V.shape
     #print 'ln(G)', np.log(G)
     mask = np.ones(len(G)) 
@@ -185,19 +192,20 @@ for n in range(1,run+1):
     g = G[:r]**(-1) 
     #print 'g', g  
     Ginv = np.zeros((M, D))
-    Ginv[:M, :M] = np.diag(g)
+    Ginv[:r, :r] = np.diag(g)
     #print 'Ginv', Ginv 
     ###Ginv = np.diag(Ginv)
     #print 'Ginv2', Ginv    
     dxds1 = np.dot((np.transpose(V[:,:])),(np.transpose(Ginv)))   
     #print 'dxds1', dxds1.shape
-    dxds = np.dot(dxds1,(np.transpose(U[:,:r])))  
+    ########dxds = np.dot(dxds1,(np.transpose(U[:,:r])))  
+    dxds = np.dot(dxds1,(np.transpose(U[:,:])))  
     #print 'dxds', dxds 
     #print 'Y', Y
     #print 'S', S
     
     svmin = np.min(G)
-    print 'Smallest sing value:', svmin              #no influence until now...(around e-03)
+    #print 'Smallest sing value:', svmin              #no influence until now...(around e-03)
     svmax = np.max(G)        
     observ = svmin/svmax
     #print 'observability', observ                   #no influence until now...(between e-05 and e-04)
@@ -268,7 +276,12 @@ for n in range(1,run+1):
     plt.plot(n+1,SE,'b*') 
     plt.yscale('log')
     plt.hold(True)
+    
+    plt.plot(n+1,svmin,'c.') 
+    plt.hold(True)
 
+    plt.plot(n+1,observ,'yo') 
+    plt.hold(True)
 plt.show()
 
 

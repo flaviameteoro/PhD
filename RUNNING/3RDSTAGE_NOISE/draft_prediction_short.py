@@ -5,10 +5,9 @@ import matplotlib.pyplot as plt
 import model as mod
 
 
-N = 2000
-Obs = 100
+N = 2300
 dt = 0.01    #original value=0.01
-fc=3000
+fc=4000
 
 
 
@@ -21,8 +20,8 @@ nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
 
-#r=18 #for x[:,0] = xtrue[:,0], both for 20 variables
-r=37 #for original code (for M = 10)
+r=18 #for x[:,0] = xtrue[:,0], both for 20 variables
+#r=37 #for original code (for M = 10)
 #r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
 #r=39   #for RK4 and 0.0005 uniform noise (for M = 12)
 
@@ -38,11 +37,11 @@ for i in range(L):
 
 
 
-K = 1.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
+K = 4.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
 Ks = 1.e0*np.diag(np.ones([L*M]))  
 
 pinv_tol =  (np.finfo(float).eps)#*max((M,D))#apparently same results as only 2.2204e-16
-max_pinv_rank = D
+max_pinv_rank = 7
 
 
 
@@ -76,7 +75,7 @@ print 'truth created'
 
 y = np.zeros([L,N]) 
 #### No noise for y (ok for seed=37)
-y = np.dot(h,xtrue[:,:N]) 
+#y = np.dot(h,xtrue[:,:N]) 
 #print 'y', y.shape
 
 #### Good noise values for y (for seed=37)
@@ -91,7 +90,7 @@ y = np.dot(h,xtrue[:,:N])
 
 #### Bad noise values for y (for seed=37)
 #y = np.dot(h,xtrue[:,:N]) + np.random.rand(N)-0.5
-#y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.04,N)-0.02
+y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.02,N)-0.01
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.01,N)-0.005
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.0022,N)-0.0011
 #y = np.dot(h,xtrue[:,:N]) + np.random.uniform(0,0.002,N)-0.001
@@ -119,7 +118,7 @@ Jac0 = np.copy(Jac)
 
 
 
-run = 1900
+run = 2200
 #fcrun = run + 2000
 
 for n in range(1,run+1):
@@ -195,13 +194,14 @@ for n in range(1,run+1):
     g = G[:r]**(-1) 
     #print 'g', g  
     Ginv = np.zeros((M, D))
-    Ginv[:M, :M] = np.diag(g)
+    Ginv[:r, :r] = np.diag(g)
     #print 'Ginv', Ginv 
     ###Ginv = np.diag(Ginv)
     #print 'Ginv2', Ginv    
     dxds1 = np.dot((np.transpose(V[:,:])),(np.transpose(Ginv)))   
     #print 'dxds1', dxds1.shape
-    dxds = np.dot(dxds1,(np.transpose(U[:,:r])))  
+    ########dxds = np.dot(dxds1,(np.transpose(U[:,:r])))  
+    dxds = np.dot(dxds1,(np.transpose(U[:,:])))  
     #print 'dxds', dxds 
     #print 'Y', Y
     #print 'S', S
