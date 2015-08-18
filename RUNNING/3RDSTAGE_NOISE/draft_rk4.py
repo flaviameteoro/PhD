@@ -19,8 +19,8 @@ print 'D=', D, 'variables and M=', M ,'time-delays'
 
 #for 20 variables:
 
-#r=18 #for x[:,0] = xtrue[:,0]
-r=37 #for original code 
+r=18 #for x[:,0] = xtrue[:,0]
+#r=37 #for original code 
 #r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
 #r=39   #for RK4 and 0.0005 uniform noise (for M = 12)
 
@@ -32,11 +32,11 @@ h = np.zeros([L,D])
 for i in range(L):
     h[i,observed_vars[i]] = 1.0   
 
-K = 5.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
+K = 4.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
 Ks = 1.e0*np.diag(np.ones([L*M]))  
 
 pinv_tol =  (np.finfo(float).eps)#*max((M,D))#apparently same results as only 2.2204e-16
-max_pinv_rank = 8
+max_pinv_rank = 7
 
 xtrue = np.zeros([D,N+1])
 xtrue[:,0] = np.random.rand(D)  #Changed to randn! It runned for both 10 and 20 variables
@@ -76,15 +76,15 @@ y = np.zeros([L,N+1])
 
 ### Bad noise values for y (for seed=37)
 #y = np.dot(h,xtrue) + np.random.rand(N+1)-0.5
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.2,N+1)-0.1
+y = np.dot(h,xtrue) + np.random.uniform(0,0.2,N+1)-0.1
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.01,N+1)-0.005
 ###(for seed=18)
-y = np.dot(h,xtrue) + np.random.normal(0,0.01,N+1)  
+#y = np.dot(h,xtrue) + np.random.normal(0,0.01,N+1)  
 
-### Noise that runs perfect until time step 1800 and 2300 (for seed=18) 
-y = np.dot(h,xtrue) + np.random.uniform(0,0.002,N+1)-0.001
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.2,N+1)-0.01
+### Noise that runs perfect until time step 1800 and 2300 (for seed=18, K=40, max_rank=7) 
+#y = np.dot(h,xtrue) + np.random.uniform(0,0.002,N+1)-0.001
+#y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
 #y = np.dot(h,xtrue) + np.random.normal(0,0.001,N+1)  
 
 
@@ -106,6 +106,8 @@ for i in range(D):
 Jac0 = np.copy(Jac)   
 
 run = 500
+
+oo = np.zeros([1,run+1])      #for observability calculation
 
 for n in range(1,run+1):
     t = (n-1)*dt
@@ -206,8 +208,13 @@ for n in range(1,run+1):
     
     svmin = np.min(G)
     #print 'Smallest sing value:', svmin              #no influence until now...(around e-03)
-    svmax = np.max(G)        
-    observ = svmin/svmax
+    svmax = np.max(G)    
+    difsv = svmax - svmin    
+    ratioobs = svmin/svmax
+    condnumber = svmax/svmin
+    print 'Condition number is', condnumber
+    oo[:,n] = (ratioobs)**2
+    obin = np.sum(oo)   
     #print 'observability', observ                   #no influence until now...(between e-05 and e-04)
 
     dx1 = np.dot(K,dxds)
@@ -277,13 +284,29 @@ for n in range(1,run+1):
     plt.yscale('log')
     plt.hold(True)
     
-    plt.plot(n+1,svmin,'c.') 
+    plt.plot(n+1,svmin,'c<') 
     plt.hold(True)
 
-    plt.plot(n+1,observ,'yo') 
+    plt.plot(n+1,svmax,'r>') 
     plt.hold(True)
+
+    #plt.plot(n+1,ratioobs,'yo') 
+    #plt.hold(True)
+  
+    plt.plot(n+1,condnumber,'m.') 
+    plt.hold(True)
+
+    #plt.plot(n+1,obin,'m<') 
+    #plt.hold(True)
+
+    #plt.plot(n+1,difsv,'mo') 
+    #plt.hold(True)
+
+
+#obin_gama = (1./float(n))*np.sum(oo)               #see article Parlitz, Schumann-Bischoff and Luther, 2015
+#print 'Observability Index is', obin_gama
+
 plt.show()
-
 
 plt.figure(figsize=(12, 10)).suptitle('Full sync - J reinitialized')
 for i in range(D/3):
