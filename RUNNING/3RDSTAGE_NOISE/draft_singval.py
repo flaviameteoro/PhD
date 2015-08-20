@@ -105,7 +105,7 @@ for i in range(D):
 
 Jac0 = np.copy(Jac)   
 
-run = 3000
+run = 9900
 
 oo = np.zeros([1,run+1])      #for observability calculation
 svmaxvec = np.zeros([1,run+1]) 
@@ -189,10 +189,47 @@ for n in range(1,run+1):
     print 'Largest sing value:', svmax   
     svmaxvec[:,n] = svmax
     difmax = abs(svmaxvec[:,n] - svmaxvec[:,n-1])
+    ###difmax = svmaxvec[:,n] - svmaxvec[:,n-1]
     print 'Difmax=', difmax
     if n >= 2:
-        if difmax >= 10:
-            svmaxvec[:,n] = svmaxvec[:,n-1]-1
+        ###if difmax >= 5:
+            ###svmaxvec[:,n] = svmaxvec[:,n-1]+0.1
+
+        ######if difmax >= 10:
+            ######if svmaxvec[:,n] > svmaxvec[:,n-1]:
+                ######svmaxvec[:,n] = svmaxvec[:,n-1]+10
+            ######else:
+                ######svmaxvec[:,n] = svmaxvec[:,n-1]-10
+        ######elif difmax >= 5:
+            ######if svmaxvec[:,n] > svmaxvec[:,n-1]:
+                ######svmaxvec[:,n] = svmaxvec[:,n-1]+5
+            ######else:
+                ######svmaxvec[:,n] = svmaxvec[:,n-1]-5
+        ######elif difmax >= 2:
+            ######if svmaxvec[:,n] > svmaxvec[:,n-1]:
+                ######svmaxvec[:,n] = svmaxvec[:,n-1]+2
+            ######else:
+                ######svmaxvec[:,n] = svmaxvec[:,n-1]-2
+
+        for i in xrange(10,0,-1):
+            if difmax >= i*1.e1:
+                if svmaxvec[:,n] > svmaxvec[:,n-1]:
+                    svmaxvec[:,n] = svmaxvec[:,n-1]+(i*1.e1)
+                else:
+                    svmaxvec[:,n] = svmaxvec[:,n-1]-(i*1.e1)
+        for i in xrange(5,0,-1):
+            ##elif if difmax >= i*1.e0:
+            if difmax >= i*1.e0:
+                if svmaxvec[:,n] > svmaxvec[:,n-1]:
+                    svmaxvec[:,n] = svmaxvec[:,n-1]+(i*1.e0)
+                else:
+                    svmaxvec[:,n] = svmaxvec[:,n-1]-(i*1.e0)
+        if difmax >= 0.5:
+            if svmaxvec[:,n] > svmaxvec[:,n-1]:
+                svmaxvec[:,n] = svmaxvec[:,n-1]+0.5
+            else:
+                svmaxvec[:,n] = svmaxvec[:,n-1]-0.5
+
             #G[0] = svmaxvec[:,n-1]
             G[0] = svmaxvec[:,n]
     print 'New largest sing value:', svmaxvec[:,n]  
@@ -314,7 +351,7 @@ for n in range(1,run+1):
     #plt.plot(n+1,obin,'m<') 
     #plt.hold(True)
 
-    #plt.plot(n+1,difsv,'mo') 
+    #plt.plot(n+1,difmax,'yo') 
     #plt.hold(True)
 
 
