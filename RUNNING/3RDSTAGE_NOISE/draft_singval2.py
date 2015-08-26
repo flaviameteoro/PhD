@@ -19,9 +19,9 @@ print 'D=', D, 'variables and M=', M ,'time-delays'
 
 #for 20 variables:
 
-r=18 #for x[:,0] = xtrue[:,0]
+#r=18 #for x[:,0] = xtrue[:,0]
 #r=37 #for original code 
-#r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
+r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
 #r=39   #for RK4 and 0.0005 uniform noise (for M = 12)
 
 np.random.seed(r)  
@@ -105,11 +105,14 @@ for i in range(D):
 
 Jac0 = np.copy(Jac)   
 
-run = 3000
+run = 300
 
 oo = np.zeros([1,run+1])      #for observability calculation
 svmaxvec = np.zeros([1,run+1]) 
 svmaxvec2 = np.zeros([1,run+1]) 
+
+dlyaini = x[:,1] - xtrue[:,1]
+print 'dlyaini', dlyaini
 
 for n in range(1,run+1):
     t = (n-1)*dt
@@ -188,14 +191,14 @@ for n in range(1,run+1):
     svmin = np.min(G)
     #print 'Smallest sing value:', svmin              #no influence until now...(around e-03)
     svmax = np.max(G) 
-    print 'Largest sing value:', svmax   
+    #print 'Largest sing value:', svmax   
     svmaxvec[:,n] = svmax
     svmaxvec2[:,n] = G[1]
     difmax = abs(svmaxvec[:,n] - svmaxvec[:,n-1])
     difmax2 = abs(svmaxvec2[:,n] - svmaxvec2[:,n-1])
     ###difmax = svmaxvec[:,n] - svmaxvec[:,n-1]
-    print 'Difmax=', difmax
-    if n >= 2:
+    #print 'Difmax=', difmax
+    #######################if n >= 2:
         ###if difmax >= 5:
             ###svmaxvec[:,n] = svmaxvec[:,n-1]+0.1
 
@@ -237,17 +240,17 @@ for n in range(1,run+1):
                     ##break
 
         ##elif difmax >= 0.5 <1:
-        if difmax >= 0.5:
-            if svmaxvec[:,n] > svmaxvec[:,n-1]:
-                svmaxvec[:,n] = svmaxvec[:,n-1]+0.5
-            else:
-                svmaxvec[:,n] = svmaxvec[:,n-1]-0.5
+        ########################if difmax >= 0.5:
+            ########################if svmaxvec[:,n] > svmaxvec[:,n-1]:
+                #########################svmaxvec[:,n] = svmaxvec[:,n-1]+0.5
+            ########################else:
+                #########################svmaxvec[:,n] = svmaxvec[:,n-1]-0.5
                 
         
         
         #G[0] = svmaxvec[:,n-1]
-        G[0] = svmaxvec[:,n]
-    print 'New largest sing value:', svmaxvec[:,n]  
+        ################################G[0] = svmaxvec[:,n]
+    #print 'New largest sing value:', svmaxvec[:,n]  
 
 
     mask = np.ones(len(G)) 
@@ -282,7 +285,7 @@ for n in range(1,run+1):
     #print 'Condition number is', condnumber
     oo[:,n] = (ratioobs)**2
     obin = np.sum(oo)   
-    #print 'observability', observ                   #no influence until now...(between e-05 and e-04)
+    #print 'observability', obin                   #no influence until now...(between e-05 and e-04)
 
     dx1 = np.dot(K,dxds)
     dx2 = np.dot(Ks,np.transpose((Y-S)))
@@ -333,6 +336,21 @@ for n in range(1,run+1):
         
     #print 'x[:,n+1] at', n+1, 'is', x[:,n+1]
 
+    dlya = x[:,n+1] - xtrue[:,n+1]
+    #print 'dlya', dlya
+    dl = abs(dlya/dlyaini)   
+    #print 'dl', dl
+    lya = (1/float(n))*(np.log(dl))
+    ##print 'Lyapunov exponent', lya
+    
+    #plt.figure(figsize=(12, 10)).suptitle('Lyapunov Exponents')
+    plt.figure(1)
+    plt.axhline(y=0, xmin=0, xmax=run, linewidth=1, color = 'm')
+    for i in range(D):     
+        plt.plot(n+1,lya[i],'y.',linewidth=2.0,label='truth')
+        plt.hold(True)
+            
+        
     ##if np.mod(n+1,10) == 1:
         ##SE = np.zeros([D,n+1])
         ##for d in range(n+1):
@@ -346,24 +364,26 @@ for n in range(1,run+1):
     dd = np.zeros([D,1])
     dd[:,0] = xtrue[:,n+1] - x[:,n+1]
     SE = np.sqrt(np.mean(np.square(dd)))            
-    print '*************************************'
+    ##print '*************************************'
     print 'SE for', n, 'is', SE
-    print '*************************************'
+    ##print '*************************************'
+    #plt.figure(figsize=(12, 10)).suptitle('Synchronisation Error')
+    plt.figure(2)
     plt.plot(n+1,SE,'b*') 
     plt.yscale('log')
     plt.hold(True)
     
-    plt.plot(n+1,svmin,'c<') 
-    plt.hold(True)
+    #plt.plot(n+1,svmin,'c<') 
+    #plt.hold(True)
 
-    plt.plot(n+1,svmax,'r>') 
-    plt.hold(True)
+    #plt.plot(n+1,svmax,'r>') 
+    #plt.hold(True)
 
     #plt.plot(n+1,ratioobs,'yo') 
     #plt.hold(True)
   
-    plt.plot(n+1,condnumber,'m.') 
-    plt.hold(True)
+    #plt.plot(n+1,condnumber,'m.') 
+    #plt.hold(True)
 
     #plt.plot(n+1,obin,'m<') 
     #plt.hold(True)
@@ -375,12 +395,12 @@ for n in range(1,run+1):
     #plt.hold(True)
 
 
-#obin_gama = (1./float(n))*np.sum(oo)               #see article Parlitz, Schumann-Bischoff and Luther, 2015
+obin_gama = (1./float(n))*np.sum(oo)               #see article Parlitz, Schumann-Bischoff and Luther, 2015
 #print 'Observability Index is', obin_gama
 
 plt.show()
 
-plt.figure(figsize=(12, 10)).suptitle('Full sync - J reinitialized')
+plt.figure(figsize=(12, 10)).suptitle('Synch')
 for i in range(D/3):
     plt.subplot(np.ceil(D/8.0),2,i+1)
     if i == 0:  
