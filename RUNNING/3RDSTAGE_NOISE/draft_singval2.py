@@ -19,9 +19,9 @@ print 'D=', D, 'variables and M=', M ,'time-delays'
 
 #for 20 variables:
 
-#r=18 #for x[:,0] = xtrue[:,0]
+r=18 #for x[:,0] = xtrue[:,0]
 #r=37 #for original code 
-r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
+#r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
 #r=39   #for RK4 and 0.0005 uniform noise (for M = 12)
 
 np.random.seed(r)  
@@ -32,11 +32,11 @@ h = np.zeros([L,D])
 for i in range(L):
     h[i,observed_vars[i]] = 1.0   
 
-K = 4.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
+K = 5.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
 Ks = 1.e0*np.diag(np.ones([L*M]))  
 
 pinv_tol =  (np.finfo(float).eps)#*max((M,D))#apparently same results as only 2.2204e-16
-max_pinv_rank = 7
+max_pinv_rank = 5
 
 xtrue = np.zeros([D,N+1])
 xtrue[:,0] = np.random.rand(D)  #Changed to randn! It runned for both 10 and 20 variables
@@ -76,7 +76,7 @@ y = np.zeros([L,N+1])
 
 ### Bad noise values for y (for seed=37)
 #y = np.dot(h,xtrue) + np.random.rand(N+1)-0.5
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.2,N+1)-0.1
+y = np.dot(h,xtrue) + np.random.uniform(0,0.2,N+1)-0.1
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.01,N+1)-0.005
 ###(for seed=18)
@@ -84,7 +84,7 @@ y = np.zeros([L,N+1])
 
 ### Noise that runs perfect until time step 1800 and 2300 (for seed=18, K=40, max_rank=7) 
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.002,N+1)-0.001
-y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
+#y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
 #y = np.dot(h,xtrue) + np.random.normal(0,0.001,N+1)  
 
 
@@ -105,7 +105,7 @@ for i in range(D):
 
 Jac0 = np.copy(Jac)   
 
-run = 300
+run = 2000
 
 oo = np.zeros([1,run+1])      #for observability calculation
 svmaxvec = np.zeros([1,run+1]) 
@@ -261,12 +261,12 @@ for n in range(1,run+1):
         else:
             mask[k] = 0
         #print 'mask', mask
-    r = min(max_pinv_rank,sum(mask)) 
+    rr = min(max_pinv_rank,sum(mask)) 
     #print 'r is', r
-    g = G[:r]**(-1) 
+    g = G[:rr]**(-1) 
     #print 'g', g  
     Ginv = np.zeros((M, D))
-    Ginv[:r, :r] = np.diag(g)
+    Ginv[:rr, :rr] = np.diag(g)
     #print 'Ginv', Ginv 
     ###Ginv = np.diag(Ginv)
     #print 'Ginv2', Ginv    
@@ -344,11 +344,19 @@ for n in range(1,run+1):
     ##print 'Lyapunov exponent', lya
     
     #plt.figure(figsize=(12, 10)).suptitle('Lyapunov Exponents')
-    plt.figure(1)
+    #if [any(item) in lya >0 
+    plt.figure(1).suptitle('Lyapunov Exponents for D=20, M=10, r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
     plt.axhline(y=0, xmin=0, xmax=run, linewidth=1, color = 'm')
-    for i in range(D):     
-        plt.plot(n+1,lya[i],'y.',linewidth=2.0,label='truth')
-        plt.hold(True)
+    ##for i in range(D):   
+    ###for i in range(D):                   # to plot all variables!!
+        ###plt.subplot(D/4,4,i+1)           # to plot all variables!!
+    for i in range(D/3):
+        plt.subplot(np.ceil(D/8.0),2,i+1)  
+        if lya[i] >0:
+            plt.plot(n+1,lya[i],'y.',linewidth=2.0,label='truth')
+            plt.yscale('log')
+            plt.ylabel('x['+str(i)+']')
+            plt.hold(True)
             
         
     ##if np.mod(n+1,10) == 1:
@@ -373,11 +381,11 @@ for n in range(1,run+1):
     plt.yscale('log')
     plt.hold(True)
     
-    #plt.plot(n+1,svmin,'c<') 
-    #plt.hold(True)
+    plt.plot(n+1,svmin,'c<') 
+    plt.hold(True)
 
-    #plt.plot(n+1,svmax,'r>') 
-    #plt.hold(True)
+    plt.plot(n+1,svmax,'r>') 
+    plt.hold(True)
 
     #plt.plot(n+1,ratioobs,'yo') 
     #plt.hold(True)
