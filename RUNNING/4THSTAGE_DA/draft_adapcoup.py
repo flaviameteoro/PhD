@@ -36,7 +36,7 @@ K = 4.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
 Ks = 1.e0*np.diag(np.ones([L*M]))  
 
 pinv_tol =  (np.finfo(float).eps)#*max((M,D))#apparently same results as only 2.2204e-16
-max_pinv_rank = D
+max_pinv_rank = 7
 
 xtrue = np.zeros([D,N+1])
 xtrue[:,0] = np.random.rand(D)  #Changed to randn! It runned for both 10 and 20 variables
@@ -84,9 +84,12 @@ y = np.zeros([L,N+1])
 ###(for seed=18)
 #y = np.dot(h,xtrue) + np.random.normal(0,0.01,N+1)  
 
+### Noise that runs perfect until time step 200 (for seed=37) 
+y = np.dot(h,xtrue) + np.random.normal(0,0.1,N+1)
+
 ### Noise that runs perfect until time step 1800 and 2300 (for seed=18, K=40, max_rank=7) 
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.002,N+1)-0.001
-y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
+#y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
 #y = np.dot(h,xtrue) + np.random.normal(0,0.001,N+1)  
 
 
@@ -107,7 +110,7 @@ for i in range(D):
 
 Jac0 = np.copy(Jac)   
 
-run = 3000
+run = 1000
 
 oo = np.zeros([1,run+1])      #for observability calculation
 svmaxvec = np.zeros([1,run+1]) 
@@ -117,9 +120,15 @@ dlyaini = x[:,1] - xtrue[:,1]
 print 'dlyaini', dlyaini
 
 for n in range(1,run+1):
-    #if n == 2300:
-    #    K = 45.e0*np.diag(np.ones([D])) 
-    #print 'K', K[0,0]
+    ##if n == 2300:
+        ##K = 45.e0*np.diag(np.ones([D])) 
+        ##print 'K', K[0,0]
+    ##if n == 2500:
+        ##K = 55.e0*np.diag(np.ones([D])) 
+        ##print 'K', K[0,0]
+    ##if n == 2800:
+        ##K = 45.e0*np.diag(np.ones([D])) 
+        ##print 'K', K[0,0]
     t = (n-1)*dt
 
     S[:,0] = np.dot(h,x[:,n])   # this 0 term should be (0:L) in case of more obs
@@ -208,55 +217,13 @@ for n in range(1,run+1):
     fro = np.sqrt(sum(G**2))
     #print 'fro', fro
     #######################if n >= 2:
-        ###if difmax >= 5:
-            ###svmaxvec[:,n] = svmaxvec[:,n-1]+0.1
-
-        ######if difmax >= 10:
-            ######if svmaxvec[:,n] > svmaxvec[:,n-1]:
-                ######svmaxvec[:,n] = svmaxvec[:,n-1]+10
-            ######else:
-                ######svmaxvec[:,n] = svmaxvec[:,n-1]-10
-        ######elif difmax >= 5:
-            ######if svmaxvec[:,n] > svmaxvec[:,n-1]:
-                ######svmaxvec[:,n] = svmaxvec[:,n-1]+5
-            ######else:
-                ######svmaxvec[:,n] = svmaxvec[:,n-1]-5
-        ######elif difmax >= 2:
-            ######if svmaxvec[:,n] > svmaxvec[:,n-1]:
-                ######svmaxvec[:,n] = svmaxvec[:,n-1]+2
-            ######else:
-                ######svmaxvec[:,n] = svmaxvec[:,n-1]-2
-        
-        ##if difmax >=10 <=100:
-            ##for i in xrange(9,0,-1):
-            #for i in range(1,10):
-                ##if difmax >= i*1.e1:
-                    ##if svmaxvec[:,n] > svmaxvec[:,n-1]:
-                        ##svmaxvec[:,n] = svmaxvec[:,n-1]+(i*1.e1)
-                    ##else:
-                        ##svmaxvec[:,n] = svmaxvec[:,n-1]-(i*1.e1)
-                    ##break
-
-        ##elif difmax >=1 <10:
-            ##for i in xrange(9,0,-1):
-            #for i in range(1,10):
-                #elif if difmax >= i*1.e0:
-                ##if difmax >= i*1.e0:
-                    ##if svmaxvec[:,n] > svmaxvec[:,n-1]:
-                        ##svmaxvec[:,n] = svmaxvec[:,n-1]+(i*1.e0)
-                    ##else:
-                        ##svmaxvec[:,n] = svmaxvec[:,n-1]-(i*1.e0)
-                    ##break
-
         ##elif difmax >= 0.5 <1:
         ########################if difmax >= 0.5:
             ########################if svmaxvec[:,n] > svmaxvec[:,n-1]:
                 #########################svmaxvec[:,n] = svmaxvec[:,n-1]+0.5
             ########################else:
                 #########################svmaxvec[:,n] = svmaxvec[:,n-1]-0.5
-                
-        
-        
+
         #G[0] = svmaxvec[:,n-1]
         ################################G[0] = svmaxvec[:,n]
     #print 'New largest sing value:', svmaxvec[:,n]  
@@ -388,16 +355,16 @@ for n in range(1,run+1):
     print 'SE for', n, 'is', SE
     ##print '*************************************'
     #plt.figure(figsize=(12, 10)).suptitle('Synchronisation Error')
-    plt.figure(2)
+    plt.figure(2).suptitle('Synchronisation Error for D=20, M=10, r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
     plt.plot(n+1,SE,'b*') 
     plt.yscale('log')
     plt.hold(True)
     
-    #plt.plot(n+1,svmin,'c<') 
-    #plt.hold(True)
+    plt.plot(n+1,svmin,'c<') 
+    plt.hold(True)
 
-    #plt.plot(n+1,svmax,'r>') 
-    #plt.hold(True)
+    plt.plot(n+1,svmax,'r>') 
+    plt.hold(True)
 
     #plt.plot(n+1,ratioobs,'yo') 
     #plt.hold(True)
@@ -415,10 +382,16 @@ for n in range(1,run+1):
     #plt.plot(n+1,difmax2,'mo') 
     #plt.hold(True)
 
-    plt.plot(n+1,fro,'y*') 
-    plt.hold(True)
+    #plt.plot(n+1,fro,'y*') 
+    #plt.hold(True)
     
     #plt.plot(n+1,fro_rank,'g*') 
+    #plt.hold(True)
+
+    #plt.plot(n+1,G[7],'y.') 
+    #plt.hold(True)
+    
+    #plt.plot(n+1,G[8],'g.') 
     #plt.hold(True)
 
 obin_gama = (1./float(n))*np.sum(oo)               #see article Parlitz, Schumann-Bischoff and Luther, 2015
@@ -426,7 +399,7 @@ obin_gama = (1./float(n))*np.sum(oo)               #see article Parlitz, Schuman
 
 plt.show()
 
-plt.figure(figsize=(12, 10)).suptitle('Synch')
+plt.figure(figsize=(12, 10)).suptitle('Variables for D=20, M=10, r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
 for i in range(D/3):
     plt.subplot(np.ceil(D/8.0),2,i+1)
     if i == 0:  

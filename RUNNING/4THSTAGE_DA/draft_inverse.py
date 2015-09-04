@@ -12,15 +12,15 @@ dt = 0.01    #original value=0.01
 D = 20 
 F=8.17
 
-M = 5
+M = 10
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
 #for 20 variables:
 
-#r=18 #for x[:,0] = xtrue[:,0]
-r=37 #for original code 
+r=18 #for x[:,0] = xtrue[:,0]
+#r=37 #for original code 
 #r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
 #r=39   #for RK4 and 0.0005 uniform noise (for M = 12)
 
@@ -36,7 +36,7 @@ K = 4.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
 Ks = 1.e0*np.diag(np.ones([L*M]))  
 
 pinv_tol =  (np.finfo(float).eps)#*max((M,D))#apparently same results as only 2.2204e-16
-max_pinv_rank = N
+max_pinv_rank = 6
 
 xtrue = np.zeros([D,N+1])
 xtrue[:,0] = np.random.rand(D)  #Changed to randn! It runned for both 10 and 20 variables
@@ -65,6 +65,7 @@ y = np.zeros([L,N+1])
 #y = np.dot(h,xtrue) 
 
 ### Good noise values for y (for seed=37)
+### (noises are centralized in zero)
 #y = np.dot(h,xtrue) + np.random.uniform(0,1.2680e-04,N+1)-6.34e-05
 #y = np.dot(h,xtrue) + np.random.uniform(0,1.2680e-04,N+1)-9.34e-05  #(out of zero mean!)
 #y = np.dot(h,xtrue) + np.random.uniform(0,1.8680e-04,N+1)-9.34e-05
@@ -80,13 +81,28 @@ y = np.zeros([L,N+1])
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.01,N+1)-0.005
 ###(for seed=18)
-y = np.dot(h,xtrue) + np.random.normal(0,0.01,N+1)  
+#y = np.dot(h,xtrue) + np.random.normal(0,0.01,N+1) 
+
+### Noise that runs perfect using HHT + R until time step 200 (for seed=37) and 500 (for seed=18, K=40, max_rank=7) 
+y = np.dot(h,xtrue) + np.random.normal(0,0.1,N+1)  #which gives the variance of 0.01  
+
+R = np.zeros([M, M])
+for i in range(M):
+    R[i,i] = 0.01
 
 ### Noise that runs perfect until time step 1800 and 2300 (for seed=18, K=40, max_rank=7) 
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.002,N+1)-0.001
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
-#y = np.dot(h,xtrue) + np.random.normal(0,0.001,N+1)  
 
+### Noise that runs perfect using HHT + R:
+### until time step 800 (for seed=18, K=40, max_rank=D)
+### until time step 2000 (for seed=18, K=40, max_rank=9) 
+#y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01   #which gives the variance of 0.0001 
+
+#R = np.zeros([M, M])
+#for i in range(M):
+#    R[i,i] = 0.0001
+
+#y = np.dot(h,xtrue) + np.random.normal(0,0.001,N+1)  
 
 #print 'y', y
 #print 'xtrue', xtrue
@@ -105,7 +121,7 @@ for i in range(D):
 
 Jac0 = np.copy(Jac)   
 
-run = 500
+run = 3000
 
 oo = np.zeros([1,run+1])      #for observability calculation
 svmaxvec = np.zeros([1,run+1]) 
@@ -181,8 +197,10 @@ for n in range(1,run+1):
     ########dxds = np.linalg.pinv(dsdx,rcond=pinv_tol)    
     #dxds = dxds.round(decimals=4)     # Applied this as it was appearing in matlab code (1st row 1 0 0 0...)
     
-    HHT = np.dot(dsdx,(np.transpose(dsdx)))
+    #HHT = np.dot(dsdx,(np.transpose(dsdx)))
+    HHT = np.dot(dsdx,(np.transpose(dsdx)))+R
     #print 'HHT', HHT
+    
     U, G, V = mod.svd(HHT)
     #print 'V', V.shape
 
@@ -261,7 +279,7 @@ for n in range(1,run+1):
     print 'SE for', n, 'is', SE
     ##print '*************************************'
     #plt.figure(figsize=(12, 10)).suptitle('Synchronisation Error')
-    plt.figure(2)
+    plt.figure(2).suptitle('Synchronisation Error for D=20, M=10, r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
     plt.plot(n+1,SE,'b*') 
     plt.yscale('log')
     plt.hold(True)
@@ -291,7 +309,7 @@ for n in range(1,run+1):
 
 plt.show()
 
-plt.figure(figsize=(12, 10)).suptitle('Synch')
+plt.figure(figsize=(12, 10)).suptitle('Variables for D=20, M=10, r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
 for i in range(D/3):
     plt.subplot(np.ceil(D/8.0),2,i+1)
     if i == 0:  
