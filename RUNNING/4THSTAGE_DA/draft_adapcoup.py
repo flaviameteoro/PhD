@@ -85,11 +85,11 @@ y = np.zeros([L,N+1])
 #y = np.dot(h,xtrue) + np.random.normal(0,0.01,N+1)  
 
 ### Noise that runs perfect until time step 200 (for seed=37) 
-y = np.dot(h,xtrue) + np.random.normal(0,0.1,N+1)
+#y = np.dot(h,xtrue) + np.random.normal(0,0.1,N+1)
 
 ### Noise that runs perfect until time step 1800 and 2300 (for seed=18, K=40, max_rank=7) 
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.002,N+1)-0.001
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
+y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
 #y = np.dot(h,xtrue) + np.random.normal(0,0.001,N+1)  
 
 
@@ -110,9 +110,12 @@ for i in range(D):
 
 Jac0 = np.copy(Jac)   
 
-run = 1000
+run = 3000
 
 oo = np.zeros([1,run+1])      #for observability calculation
+cond = np.zeros([1,run+1])  
+difcond = 0
+
 svmaxvec = np.zeros([1,run+1]) 
 svmaxvec2 = np.zeros([1,run+1]) 
 
@@ -120,8 +123,9 @@ dlyaini = x[:,1] - xtrue[:,1]
 print 'dlyaini', dlyaini
 
 for n in range(1,run+1):
-    ##if n == 2300:
-        ##K = 45.e0*np.diag(np.ones([D])) 
+    #if n == 2300:
+    #    K = 45.e0*np.diag(np.ones([D])) 
+    #    max_pinv_rank = 6
         ##print 'K', K[0,0]
     ##if n == 2500:
         ##K = 55.e0*np.diag(np.ones([D])) 
@@ -197,13 +201,16 @@ for n in range(1,run+1):
     
     U, G, V = mod.svd(dsdx)
     #print 'U', U.shape
-    #print 'G', G.shape                       # All positive values, for good or bad runs. 
+    #if n >= 2000:
+    #print 'G', G                       # All positive values, for good or bad runs. 
     #print 'G2', G[1]
     #print 'V', V.shape
     #print 'ln(G)', np.log(G)
 
     svmin = np.min(G)
     #print 'Smallest sing value:', svmin              #no influence until now...(around e-03)
+    svmin2 = G[8]
+    #print '2nd smallest sing value:', svmin2
     svmax = np.max(G) 
     #print 'Largest sing value:', svmax   
     svmaxvec[:,n] = svmax
@@ -261,6 +268,13 @@ for n in range(1,run+1):
     difsv = svmax - svmin    
     ratioobs = svmin/svmax
     condnumber = svmax/svmin
+    cond[:,n] = condnumber
+    #if n >= 100:
+        #difcond = cond[:,n] - cond[:,n-100]
+    if np.mod(n,100) == 0:
+        difcond = cond[:,n] 
+    else:
+        difcond = 0 
     #print 'Condition number is', condnumber
     oo[:,n] = (ratioobs)**2
     obin = np.sum(oo)   
@@ -320,7 +334,8 @@ for n in range(1,run+1):
     dl = abs(dlya/dlyaini)   
     #print 'dl', dl
     lya = (1/float(n))*(np.log(dl))
-    ##print 'Lyapunov exponent', lya
+    print 'Lyapunov exponent', lya
+    print 'Max lyapunov exponent', max(lya)  #it is not the max value that matters, it is the amount of negative lyapunov exponents!!
     
     #plt.figure(figsize=(12, 10)).suptitle('Lyapunov Exponents')
     #if [any(item) in lya >0 
@@ -360,11 +375,11 @@ for n in range(1,run+1):
     plt.yscale('log')
     plt.hold(True)
     
-    plt.plot(n+1,svmin,'c<') 
-    plt.hold(True)
+    #plt.plot(n+1,svmin,'c<') 
+    #plt.hold(True)
 
-    plt.plot(n+1,svmax,'r>') 
-    plt.hold(True)
+    #plt.plot(n+1,svmax,'r>') 
+    #plt.hold(True)
 
     #plt.plot(n+1,ratioobs,'yo') 
     #plt.hold(True)
@@ -372,6 +387,10 @@ for n in range(1,run+1):
     #plt.plot(n+1,condnumber,'y*') 
     #plt.yscale('log')
     #plt.hold(True)
+
+    plt.plot(n+1,difcond,'b.') 
+    plt.yscale('log')
+    plt.hold(True)
 
     #plt.plot(n+1,obin,'m<') 
     #plt.hold(True)
