@@ -93,7 +93,7 @@ y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
 #y = np.dot(h,xtrue) + np.random.normal(0,0.001,N+1)  
 
 
-print 'y', y[0,5]
+#print 'y', y[0,5]
 #print 'xtrue', xtrue
 
 Y = np.zeros([1,M])            
@@ -120,16 +120,19 @@ svmaxvec = np.zeros([1,run+1])
 svmaxvec2 = np.zeros([1,run+1]) 
 
 dlyaini = x[:,1] - xtrue[:,1]
-print 'dlyaini', dlyaini
+#print 'dlyaini', dlyaini
 
 for n in range(1,run+1):
-    #if n == 2300:
-    #    K = 45.e0*np.diag(np.ones([D])) 
-    #    max_pinv_rank = 6
+    if n == 2300:
+        K = 45.e0*np.diag(np.ones([D])) 
+        max_pinv_rank = 6
         ##print 'K', K[0,0]
     ##if n == 2500:
         ##K = 55.e0*np.diag(np.ones([D])) 
         ##print 'K', K[0,0]
+    if n == 2600:
+        K = 40.e0*np.diag(np.ones([D])) 
+        max_pinv_rank = 7
     ##if n == 2800:
         ##K = 45.e0*np.diag(np.ones([D])) 
         ##print 'K', K[0,0]
@@ -202,11 +205,12 @@ for n in range(1,run+1):
     U, G, V = mod.svd(dsdx)
     #print 'U', U.shape
     #if n >= 2000:
-    #print 'G', G                       # All positive values, for good or bad runs. 
+    #print 'G', G.shape                       # All positive values, for good or bad runs. 
     #print 'G2', G[1]
     #print 'V', V.shape
     #print 'ln(G)', np.log(G)
 
+    
     svmin = np.min(G)
     #print 'Smallest sing value:', svmin              #no influence until now...(around e-03)
     svmin2 = G[8]
@@ -245,6 +249,21 @@ for n in range(1,run+1):
             mask[k] = 0
         #print 'mask', mask
     rr = min(max_pinv_rank,sum(mask)) 
+
+    ############### New dynamic coupling ###############
+    ##KG = np.copy(G) 
+    ##for m in range(len(G)):
+        ##if G[m] < 1:
+            ##KG[m] = 0
+    #print 'G', G
+    ##KGd = np.zeros((M, D))
+    ##KGd[:len(G),:len(G)] = np.diag(KG)    
+    #print 'KGd', KGd
+
+    ##C = np.dot(U, np.dot(KGd,V))
+    #print 'C', C
+    ####################################################
+
     #print 'r is', r
     ###fro_rank = np.sqrt(sum((G[:rr])**2))
     ###print 'fro_r', fro_rank
@@ -281,11 +300,14 @@ for n in range(1,run+1):
     #print 'observability', obin                   #no influence until now...(between e-05 and e-04)
 
     dx1 = np.dot(K,dxds)
+    ####dx1 = np.dot(C,dxds)
     dx2 = np.dot(Ks,np.transpose((Y-S)))
     dx = np.dot(dx1,dx2)
+    #print 'dx', dx.shape  
+    #print 'x[:,n]shape', x[:,n].shape  
     dx = dx.reshape(D)
-    #print 'dx', dx
-    #print 'x[:,n]shape', x[:,n].shape
+
+    
     
     random = np.zeros(D)
     #xtran2 = x[:,n] + dx                                           #n3m4
@@ -334,8 +356,14 @@ for n in range(1,run+1):
     dl = abs(dlya/dlyaini)   
     #print 'dl', dl
     lya = (1/float(n))*(np.log(dl))
-    print 'Lyapunov exponent', lya
-    print 'Max lyapunov exponent', max(lya)  #it is not the max value that matters, it is the amount of negative lyapunov exponents!!
+    
+    lyaposit = 0
+    for i in range(D):
+        if lya[i] > 0:
+            lyaposit = lyaposit + 1
+
+    #print 'Lyapunov exponent', lya
+    #print 'Max lyapunov exponent', max(lya)  #it is not the max value that matters, it is the amount of negative lyapunov exponents!!
     
     #plt.figure(figsize=(12, 10)).suptitle('Lyapunov Exponents')
     #if [any(item) in lya >0 
@@ -372,7 +400,7 @@ for n in range(1,run+1):
     #plt.figure(figsize=(12, 10)).suptitle('Synchronisation Error')
     plt.figure(2).suptitle('Synchronisation Error for D=20, M=10, r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
     plt.plot(n+1,SE,'b*') 
-    plt.yscale('log')
+    #plt.yscale('log')
     plt.hold(True)
     
     #plt.plot(n+1,svmin,'c<') 
@@ -388,9 +416,9 @@ for n in range(1,run+1):
     #plt.yscale('log')
     #plt.hold(True)
 
-    plt.plot(n+1,difcond,'b.') 
-    plt.yscale('log')
-    plt.hold(True)
+    #plt.plot(n+1,difcond,'b.') 
+    #plt.yscale('log')
+    #plt.hold(True)
 
     #plt.plot(n+1,obin,'m<') 
     #plt.hold(True)
@@ -412,6 +440,9 @@ for n in range(1,run+1):
     
     #plt.plot(n+1,G[8],'g.') 
     #plt.hold(True)
+
+    plt.plot(n+1,lyaposit,'g.') 
+    plt.hold(True)
 
 obin_gama = (1./float(n))*np.sum(oo)               #see article Parlitz, Schumann-Bischoff and Luther, 2015
 #print 'Observability Index is', obin_gama
