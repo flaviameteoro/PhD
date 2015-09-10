@@ -32,7 +32,7 @@ h = np.zeros([L,D])
 for i in range(L):
     h[i,observed_vars[i]] = 1.0   
 
-K = 4.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
+K = 40.e0*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
 Ks = 1.e0*np.diag(np.ones([L*M]))  
 
 pinv_tol =  (np.finfo(float).eps)#*max((M,D))#apparently same results as only 2.2204e-16
@@ -130,8 +130,8 @@ for n in range(1,run+1):
     ##if n == 2500:
         ##K = 55.e0*np.diag(np.ones([D])) 
         ##print 'K', K[0,0]
-    if n == 2600:
-        K = 40.e0*np.diag(np.ones([D])) 
+    if n == 2550:
+        #K = 40.e0*np.diag(np.ones([D])) 
         max_pinv_rank = 7
     ##if n == 2800:
         ##K = 45.e0*np.diag(np.ones([D])) 
@@ -362,6 +362,25 @@ for n in range(1,run+1):
         if lya[i] > 0:
             lyaposit = lyaposit + 1
 
+################# Adjusting synchronisation ######################
+
+    #if lyaposit <= 10:
+    #    K = 40.e0*np.diag(np.ones([D])) 
+    #    max_pinv_rank = 7
+
+    #if 5 < lyaposit <= 10:
+    #    K = 45.e0*np.diag(np.ones([D])) 
+    #    max_pinv_rank = 6
+
+    #if 10 < lyaposit <= 15:
+    #    K = 45.e0*np.diag(np.ones([D])) 
+    #    max_pinv_rank = 6        
+
+    #if lyaposit > 15:
+        #K = 50.e0*np.diag(np.ones([D])) 
+    #    max_pinv_rank = 7
+
+
     #print 'Lyapunov exponent', lya
     #print 'Max lyapunov exponent', max(lya)  #it is not the max value that matters, it is the amount of negative lyapunov exponents!!
     
@@ -397,6 +416,9 @@ for n in range(1,run+1):
     ##print '*************************************'
     print 'SE for', n, 'is', SE
     ##print '*************************************'
+
+      
+
     #plt.figure(figsize=(12, 10)).suptitle('Synchronisation Error')
     plt.figure(2).suptitle('Synchronisation Error for D=20, M=10, r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
     plt.plot(n+1,SE,'b*') 
