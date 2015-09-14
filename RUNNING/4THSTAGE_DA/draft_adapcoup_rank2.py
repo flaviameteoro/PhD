@@ -32,11 +32,11 @@ h = np.zeros([L,D])
 for i in range(L):
     h[i,observed_vars[i]] = 1.0   
 
-K = 10.e0*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
+K = 40.e0*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
 Ks = 1.e0*np.diag(np.ones([L*M]))  
 
 pinv_tol =  (np.finfo(float).eps)#*max((M,D))#apparently same results as only 2.2204e-16
-max_pinv_rank = 1
+max_pinv_rank = M
 
 xtrue = np.zeros([D,N+1])
 xtrue[:,0] = np.random.rand(D)  #Changed to randn! It runned for both 10 and 20 variables
@@ -263,13 +263,13 @@ for n in range(1,run+1):
     ############### Testing rank max #########################
 
     #test_rank = True
-    linf_norm2 = 0
-    #######linf_norm = 0
-    max_pinv_rank = 1
+    linf_norm2 = 51
+    #######linf_norm = 11
+    max_pinv_rank = M
 
     #def start():
-    while linf_norm2 <= 10:
-    #######while linf_norm <= 10:  
+    while linf_norm2 >= 50:
+    #######while linf_norm >= 10:  
   
         #k=0
         #if test_rank = False:
@@ -339,23 +339,23 @@ for n in range(1,run+1):
         #linf_norm2_prev = linf_norm2
 
         print 'linf_norm2', linf_norm2
-        #######print 'linf_norm', linf_norm
+        ######print 'linf_norm', linf_norm
 
         #if linf_norm2 <= 10:
         #    test_rank = False
-        max_pinv_rank = max_pinv_rank + 1     
+        max_pinv_rank = max_pinv_rank - 1     
         
-        if max_pinv_rank > M+1:
-            break
+        #if max_pinv_rank > M+1:
+        #    break
 
-    print 'Final max_pinv_rank', max_pinv_rank  
+    #print 'Final max_pinv_rank', max_pinv_rank  
     #while test_rank:
     #    start() 
 
     ############################################################################################
-    max_pinv_rank  = max_pinv_rank -2
-    if max_pinv_rank  == 0:
-        max_pinv_rank  = 1
+    max_pinv_rank  = max_pinv_rank+1
+    ##if max_pinv_rank  == 0:
+        ##max_pinv_rank  = 1
     print 'Ideal max_pinv_rank', max_pinv_rank  
 
     mask = np.ones(len(G)) 
@@ -499,7 +499,7 @@ for n in range(1,run+1):
     #plt.figure(figsize=(12, 10)).suptitle('Synchronisation Error')
     plt.figure(2).suptitle('Synchronisation Error for D=20, M=10, r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
     plt.plot(n+1,SE,'b*') 
-    plt.yscale('log')
+    #plt.yscale('log')
     plt.hold(True)
     
     #plt.plot(n+1,svmin,'c<') 
@@ -540,11 +540,14 @@ for n in range(1,run+1):
     #plt.plot(n+1,G[8],'g.') 
     #plt.hold(True)
 
-    #plt.plot(n+1,lyaposit,'g.') 
-    #plt.hold(True)
+    plt.plot(n+1,lyaposit,'y.') 
+    plt.hold(True)
 
-    plt.plot(n+1,linf_norm2,'m*') 
-    plt.yscale('log')
+    #plot(n+1,linf_norm2,'m*') 
+    #plt.yscale('log')
+    #plt.hold(True)
+        
+    plt.plot(n+1,max_pinv_rank,'mo') 
     plt.hold(True)
 
 obin_gama = (1./float(n))*np.sum(oo)               #see article Parlitz, Schumann-Bischoff and Luther, 2015
