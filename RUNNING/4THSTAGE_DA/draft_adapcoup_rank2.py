@@ -110,7 +110,7 @@ for i in range(D):
 
 Jac0 = np.copy(Jac)   
 
-run = 3000
+run = 2000
 
 oo = np.zeros([1,run+1])      #for observability calculation
 cond = np.zeros([1,run+1])  
@@ -230,6 +230,7 @@ for n in range(1,run+1):
     #print 'Difmax=', difmax
     #print 'Difmax2=', difmax2
 
+    ##### Frobenius #######
     fro = np.sqrt(sum(G**2))
     #print 'fro', fro
     #######################if n >= 2:
@@ -347,6 +348,9 @@ for n in range(1,run+1):
         
         #if max_pinv_rank > M+1:
         #    break
+
+        if max_pinv_rank == 7:
+            break
 
     #print 'Final max_pinv_rank', max_pinv_rank  
     #while test_rank:
@@ -499,7 +503,7 @@ for n in range(1,run+1):
     #plt.figure(figsize=(12, 10)).suptitle('Synchronisation Error')
     plt.figure(2).suptitle('Synchronisation Error for D=20, M=10, r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
     plt.plot(n+1,SE,'b*') 
-    #plt.yscale('log')
+    plt.yscale('log')
     plt.hold(True)
     
     #plt.plot(n+1,svmin,'c<') 
@@ -511,9 +515,9 @@ for n in range(1,run+1):
     #plt.plot(n+1,ratioobs,'yo') 
     #plt.hold(True)
   
-    #plt.plot(n+1,condnumber,'y*') 
-    #plt.yscale('log')
-    #plt.hold(True)
+    plt.plot(n+1,condnumber,'y*') 
+    plt.yscale('log')
+    plt.hold(True)
 
     #plt.plot(n+1,difcond,'b.') 
     #plt.yscale('log')
@@ -540,8 +544,8 @@ for n in range(1,run+1):
     #plt.plot(n+1,G[8],'g.') 
     #plt.hold(True)
 
-    plt.plot(n+1,lyaposit,'y.') 
-    plt.hold(True)
+    #plt.plot(n+1,lyaposit,'y.') 
+    #plt.hold(True)
 
     #plot(n+1,linf_norm2,'m*') 
     #plt.yscale('log')

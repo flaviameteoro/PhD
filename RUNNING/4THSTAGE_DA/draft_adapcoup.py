@@ -122,20 +122,27 @@ svmaxvec2 = np.zeros([1,run+1])
 dlyaini = x[:,1] - xtrue[:,1]
 #print 'dlyaini', dlyaini
 
+SE = 0
+
 for n in range(1,run+1):
-    if n == 2300:
-        K = 45.e0*np.diag(np.ones([D])) 
-        max_pinv_rank = 6
+    #####if n == 2300:
+    #####if n > 500:
+    #####    if SE >= 0.5:
+    #####        K = 45.e0*np.diag(np.ones([D])) 
+    #####        max_pinv_rank = 6
         ##print 'K', K[0,0]
     ##if n == 2500:
         ##K = 55.e0*np.diag(np.ones([D])) 
         ##print 'K', K[0,0]
-    if n == 2550:
+    #####if n == 2550:
         #K = 40.e0*np.diag(np.ones([D])) 
-        max_pinv_rank = 7
-    ##if n == 2800:
-        ##K = 45.e0*np.diag(np.ones([D])) 
+        #####max_pinv_rank = 7
+    #####if n == 2700:
+        #K = 45.e0*np.diag(np.ones([D])) 
+        #####max_pinv_rank = 6
         ##print 'K', K[0,0]
+       
+
     t = (n-1)*dt
 
     S[:,0] = np.dot(h,x[:,n])   # this 0 term should be (0:L) in case of more obs
@@ -205,7 +212,7 @@ for n in range(1,run+1):
     U, G, V = mod.svd(dsdx)
     #print 'U', U.shape
     #if n >= 2000:
-    #print 'G', G.shape                       # All positive values, for good or bad runs. 
+    #print 'G', G                       # All positive values, for good or bad runs. 
     #print 'G2', G[1]
     #print 'V', V.shape
     #print 'ln(G)', np.log(G)
@@ -213,7 +220,7 @@ for n in range(1,run+1):
     
     svmin = np.min(G)
     #print 'Smallest sing value:', svmin              #no influence until now...(around e-03)
-    svmin2 = G[8]
+    svmin2 = G[M-2]
     #print '2nd smallest sing value:', svmin2
     svmax = np.max(G) 
     #print 'Largest sing value:', svmax   
@@ -306,9 +313,45 @@ for n in range(1,run+1):
     #print 'dx', dx.shape  
     #print 'x[:,n]shape', x[:,n].shape  
     dx = dx.reshape(D)
+    #print 'dx', dx
+    
+    ################# Calculating the L-2 norm (trying to choose an ideal rank) #############
+    deltax = np.dot(dxds,np.transpose(Y-S))
+    #print 'deltax', deltax.shape
+    for i in range(D):
+        deltax2 = deltax[i]**2
+    deltax_norm = np.sqrt(np.sum(deltax2))
+    #print 'deltax_norm', deltax_norm
 
+    for i in range(D):
+        dx2 = dx[i]**2
+    dx_norm = np.sqrt(np.sum(dx2))
     
-    
+    random = np.zeros(D)
+    x_unpert = mod.lorenz96(x[:,n],random,dt) 
+    #print 'x_unpert', x_unpert.shape
+    for i in range(D):
+        x_unpert2 = x_unpert[i]**2
+    xunpert_norm = np.sqrt(np.sum(x_unpert2))
+    #print 'xunpert_norm', xunpert_norm
+
+    l_inf = np.zeros(D)
+    for i in range(D):
+        l_inf[i] = abs(deltax[i]/x_unpert[i])
+    linf_norm = max(l_inf)
+    #print 'linf_norm', linf_norm
+
+    l_inf2 = np.zeros(D)
+    for i in range(D):
+        l_inf2[i] = abs(dx[i]/x_unpert[i])
+    linf_norm2 = max(l_inf2)
+    #print 'linf_norm', linf_norm
+    ####print 'linf_norm2', linf_norm2
+
+    #if linf_norm2 >= 10:
+        
+    ############################################################################################
+
     random = np.zeros(D)
     #xtran2 = x[:,n] + dx                                           #n3m4
     #x[:,n+1] = mod.lorenz96(xtran2,random,dt) 
@@ -362,6 +405,7 @@ for n in range(1,run+1):
         if lya[i] > 0:
             lyaposit = lyaposit + 1
 
+    ####print 'Lyapositive', lyaposit
 ################# Adjusting synchronisation ######################
 
     #if lyaposit <= 10:
@@ -415,18 +459,21 @@ for n in range(1,run+1):
     SE = np.sqrt(np.mean(np.square(dd)))            
     ##print '*************************************'
     print 'SE for', n, 'is', SE
-    ##print '*************************************'
+    print '*************************************'
 
       
 
     #plt.figure(figsize=(12, 10)).suptitle('Synchronisation Error')
     plt.figure(2).suptitle('Synchronisation Error for D=20, M=10, r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
     plt.plot(n+1,SE,'b*') 
-    #plt.yscale('log')
+    plt.yscale('log')
     plt.hold(True)
     
-    #plt.plot(n+1,svmin,'c<') 
-    #plt.hold(True)
+    plt.plot(n+1,svmin,'go') 
+    plt.hold(True)
+
+    plt.plot(n+1,svmin2,'yo') 
+    plt.hold(True)
 
     #plt.plot(n+1,svmax,'r>') 
     #plt.hold(True)
@@ -463,8 +510,12 @@ for n in range(1,run+1):
     #plt.plot(n+1,G[8],'g.') 
     #plt.hold(True)
 
-    plt.plot(n+1,lyaposit,'g.') 
-    plt.hold(True)
+    #plt.plot(n+1,lyaposit,'g.') 
+    #plt.hold(True)
+
+    #plt.plot(n+1,linf_norm2,'m*') 
+    #plt.yscale('log')
+    #plt.hold(True)
 
 obin_gama = (1./float(n))*np.sum(oo)               #see article Parlitz, Schumann-Bischoff and Luther, 2015
 #print 'Observability Index is', obin_gama
