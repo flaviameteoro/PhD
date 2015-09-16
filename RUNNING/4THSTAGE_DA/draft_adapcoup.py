@@ -110,7 +110,7 @@ for i in range(D):
 
 Jac0 = np.copy(Jac)   
 
-run = 3000
+run = 4000
 
 oo = np.zeros([1,run+1])      #for observability calculation
 cond = np.zeros([1,run+1])  
@@ -123,14 +123,29 @@ dlyaini = x[:,1] - xtrue[:,1]
 #print 'dlyaini', dlyaini
 
 SE = 0
+svmin3 = 1
+svmin4 = 1
 
 for n in range(1,run+1):
     #####if n == 2300:
-    #####if n > 500:
-    #####    if SE >= 0.5:
-    #####        K = 45.e0*np.diag(np.ones([D])) 
-    #####        max_pinv_rank = 6
-        ##print 'K', K[0,0]
+        #####    if SE >= 0.5:
+        #####        K = 45.e0*np.diag(np.ones([D])) 
+    
+    #if n > 1500:
+    if svmin3 < 0.02:
+        max_pinv_rank = 6
+        print 'svmin3', svmin3
+        print 'max_pinv_rank', max_pinv_rank  
+    #if svmin4 < 0.02:
+    #    max_pinv_rank = 5
+    #    print 'svmin3', svmin3
+    #    print 'max_pinv_rank', max_pinv_rank  
+    else:
+        max_pinv_rank = 7 
+
+    if n > 3400:
+        max_pinv_rank = 7
+    
     ##if n == 2500:
         ##K = 55.e0*np.diag(np.ones([D])) 
         ##print 'K', K[0,0]
@@ -222,6 +237,9 @@ for n in range(1,run+1):
     #print 'Smallest sing value:', svmin              #no influence until now...(around e-03)
     svmin2 = G[M-2]
     #print '2nd smallest sing value:', svmin2
+    svmin3 = G[M-3]
+    svmin4 = G[M-4]
+
     svmax = np.max(G) 
     #print 'Largest sing value:', svmax   
     svmaxvec[:,n] = svmax
@@ -469,14 +487,20 @@ for n in range(1,run+1):
     plt.yscale('log')
     plt.hold(True)
     
-    plt.plot(n+1,svmin,'go') 
-    plt.hold(True)
-
-    plt.plot(n+1,svmin2,'yo') 
-    plt.hold(True)
-
-    #plt.plot(n+1,svmax,'r>') 
+    #plt.plot(n+1,svmin,'go') 
     #plt.hold(True)
+
+    #plt.plot(n+1,svmin2,'yo') 
+    #plt.hold(True)
+
+    plt.plot(n+1,svmin3,'co') 
+    plt.hold(True)
+    
+    plt.plot(n+1,svmin4,'mo') 
+    plt.hold(True)
+
+    plt.plot(n+1,svmax,'ro') 
+    plt.hold(True)
 
     #plt.plot(n+1,ratioobs,'yo') 
     #plt.hold(True)
