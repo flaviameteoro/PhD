@@ -18,8 +18,8 @@ nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
 ##################### Seeding for 20 variables#######################
-r=18 #for x[:,0] = xtrue[:,0]
-#r=37 #for original code 
+#r=18 #for x[:,0] = xtrue[:,0]
+r=37 #for original code 
 #r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
 #r=39   #for RK4 and 0.0005 uniform noise (for M = 12)
 
@@ -72,7 +72,7 @@ print 'truth created'
 y = np.zeros([L,N+1]) 
 
 ### No noise for y (ok for seed=37)
-#y = np.dot(h,xtrue) 
+y = np.dot(h,xtrue) 
 
 ### Good noise values for y (for seed=37)
 ### (noises are centralized in zero)
@@ -107,11 +107,11 @@ y = np.zeros([L,N+1])
 ### until time step 2600 (for seed=18, K=10, max_rank=D)
 ### until time step 800  (for seed=18, K=40, max_rank=D)
 ### until time step 2000 (for seed=18, K=40, max_rank=9) 
-y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01   #which gives the variance of 0.0001 
+#y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01   #which gives the variance of 0.0001 
 
-R = np.zeros([M, M])
-for i in range(M):
-    R[i,i] = 0.0001
+#R = np.zeros([M, M])
+#for i in range(M):
+#    R[i,i] = 0.0001
 
 #y = np.dot(h,xtrue) + np.random.normal(0,0.001,N+1)  
 
@@ -120,7 +120,9 @@ for i in range(M):
 Y = np.zeros([1,M])            
 S = np.zeros([1,M]) 
 dsdx = np.zeros([M,D])         
-dxds = np.zeros([D,M])  
+dxds = np.zeros([D,M]) 
+gama = np.zeros([M,M])   
+gamainv = np.zeros([M,M])   
 
 xx = np.zeros([D,1])      
 xtran = np.zeros([D,1]) 
@@ -138,7 +140,7 @@ svmaxvec = np.zeros([1,run+1])
 svmaxvec2 = np.zeros([1,run+1]) 
 
 dlyaini = x[:,1] - xtrue[:,1]
-print 'dlyaini', dlyaini
+#print 'dlyaini', dlyaini
 
 
 
@@ -184,17 +186,26 @@ for n in range(1,run+1):
     #dxds = dxds.round(decimals=4)     # Applied this as it was appearing in matlab code (1st row 1 0 0 0...)
     
     
-    ### Calculating the supposed equivalent for dxds, in KF structure###
-    ####HHT = np.dot(dsdx,(np.transpose(dsdx)))
+    ##### Calculating the supposed equivalent for dxds, in KF structure###
+    #(Use this inverse instead of SVD, as gama is a diagonal!!!!!!!)
+    dsdxt = np.transpose(dsdx)
+    for i in range(M):
+        gama[i,i] = np.dot(dsdx[i,:],dsdxt[:,i])
+    #print 'Gama1', gama
+    for i in range(M):
+        gamainv[i,i] = gama[i,i]**(-1) 
+    #print 'Gamainv', gamainv
+        
+    #######HHT = np.dot(dsdx,(np.transpose(dsdx)))
     ####HHT = np.dot(dsdx,(np.transpose(dsdx)))+R
     ####HKHT = np.dot(dsdx,np.dot(K,(np.transpose(dsdx))))
-    HKHT = np.dot(dsdx,np.dot(K,(np.transpose(dsdx))))+R
+    ####HKHT = np.dot(dsdx,np.dot(K,(np.transpose(dsdx))))+R
 
 
     #### Calculating the inverse of HPHT (KF structure) through SVD ####
     ####U, G, V = mod.svd(HHT)     # considering P=1
-    U, G, V = mod.svd(HKHT)
-
+    ####U, G, V = mod.svd(HKHT)
+    U, G, V = mod.svd(gama)
 
     ################### Last 3 singular values #########################
     svmin = np.min(G)
@@ -225,10 +236,10 @@ for n in range(1,run+1):
     
     HHTinv = np.dot(HHTinv1,(np.transpose(U[:,:])))  
     
-
+    #print 'HHTinv', HHTinv
     ################# Calculating the KF equivalent of dxds #############
-    ####dxds = np.dot((np.transpose(dsdx)),HHTinv)
-    dxds = np.dot(K,np.dot(np.transpose(dsdx),HHTinv))    
+    dxds = np.dot((np.transpose(dsdx)),HHTinv)
+    ####dxds = np.dot(K,np.dot(np.transpose(dsdx),HHTinv))    
     
     
     ################# Multiplying it with (y - hx) ######################
