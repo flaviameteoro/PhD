@@ -19,8 +19,8 @@ print 'D=', D, 'variables and M=', M ,'time-delays'
 
 ##################### Seeding for 20 variables#######################
 #r=18 #for x[:,0] = xtrue[:,0]
-r=37 #for original code 
-#r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
+#r=37 #for original code 
+r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
 #r=39   #for RK4 and 0.0005 uniform noise (for M = 12)
 
 np.random.seed(r)  
@@ -37,7 +37,7 @@ for i in range(L):
 ################### Setting coupling matrices ########################
 K = 1.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
 Ks = 1.e0*np.diag(np.ones([L*M]))  
-
+K1 = 11.e0*np.diag(np.ones([D]))
 
 ######### Setting tolerance and maximum for rank calculations ########
 pinv_tol =  (np.finfo(float).eps)#*max((M,D))#apparently same results as only 2.2204e-16
@@ -72,7 +72,7 @@ print 'truth created'
 y = np.zeros([L,N+1]) 
 
 ### No noise for y (ok for seed=37)
-y = np.dot(h,xtrue) 
+#y = np.dot(h,xtrue) 
 
 ### Good noise values for y (for seed=37)
 ### (noises are centralized in zero)
@@ -107,11 +107,11 @@ y = np.dot(h,xtrue)
 ### until time step 2600 (for seed=18, K=10, max_rank=D)
 ### until time step 800  (for seed=18, K=40, max_rank=D)
 ### until time step 2000 (for seed=18, K=40, max_rank=9) 
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01   #which gives the variance of 0.0001 
+y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01   #which gives the variance of 0.0001 
 
-#R = np.zeros([M, M])
-#for i in range(M):
-#    R[i,i] = 0.0001
+R = np.zeros([M, M])
+for i in range(M):
+    R[i,i] = 0.0001
 
 #y = np.dot(h,xtrue) + np.random.normal(0,0.001,N+1)  
 
@@ -123,6 +123,8 @@ dsdx = np.zeros([M,D])
 dxds = np.zeros([D,M]) 
 gama = np.zeros([M,M])   
 gamainv = np.zeros([M,M])   
+#P = (0.01)*np.diag(np.ones([D]))  
+P = np.zeros([D, D])
 
 xx = np.zeros([D,1])      
 xtran = np.zeros([D,1]) 
@@ -182,30 +184,54 @@ for n in range(1,run+1):
         dsdx[idxs,:] = np.dot(h,Jac)
    
     #### Calculating dxds as a pseudoinverse using python function######
-    ########dxds = np.linalg.pinv(dsdx,rcond=pinv_tol)    
+    dxds = np.linalg.pinv(dsdx,rcond=pinv_tol)    
     #dxds = dxds.round(decimals=4)     # Applied this as it was appearing in matlab code (1st row 1 0 0 0...)
     
     
     ##### Calculating the supposed equivalent for dxds, in KF structure###
     #(Use this inverse instead of SVD, as gama is a diagonal!!!!!!!)
-    dsdxt = np.transpose(dsdx)
-    for i in range(M):
-        gama[i,i] = np.dot(dsdx[i,:],dsdxt[:,i])
+    ##dsdxt = np.transpose(dsdx)
+    ##for i in range(M):
+        ##gama[i,i] = np.dot(dsdx[i,:],dsdxt[:,i])
+    #####gama = np.dot(dsdx,dsdxt)
     #print 'Gama1', gama
-    for i in range(M):
-        gamainv[i,i] = gama[i,i]**(-1) 
+    ##for i in range(M):
+        ##gamainv[i,i] = gama[i,i]**(-1) 
     #print 'Gamainv', gamainv
         
-    #######HHT = np.dot(dsdx,(np.transpose(dsdx)))
+    HHT = np.dot(dsdx,(np.transpose(dsdx)))
     ####HHT = np.dot(dsdx,(np.transpose(dsdx)))+R
-    ####HKHT = np.dot(dsdx,np.dot(K,(np.transpose(dsdx))))
-    ####HKHT = np.dot(dsdx,np.dot(K,(np.transpose(dsdx))))+R
+    
+    dxdst = np.linalg.pinv(np.transpose(dsdx),rcond=pinv_tol)    
+    P = np.dot(dxds,np.dot(R,dxdst))
+    #P = 10*(np.dot(dxds,np.dot(R,dxdst)))
+    ####P1 = (np.dot(dxds,np.dot(R,dxdst)))
+    ####P2 = np.diag(P1)
+    ####P = np.zeros([D, D])
+    ####P = np.diag(P2)
+    #print 'P1', P1
+    #print 'P', P
+    ##P = (0.0001)*P
+    
+    newinv = (11.*R)
+    #print 'R', R
+    #print 'newinv', newinv
 
+    for i in range(len(R)):
+        newinv[i,i]=(newinv[i,i])**(-1)  
+    #print 'newinv', newinv  
+
+    ####HKHT = np.dot(dsdx,np.dot(K,(np.transpose(dsdx))))
+    ####HPHT = np.dot(dsdx,np.dot(P,(np.transpose(dsdx))))
+
+    ####HKHT = np.dot(dsdx,np.dot(K,(np.transpose(dsdx))))+R
+    ####HPHT = np.dot(dsdx,np.dot(P,(np.transpose(dsdx))))+R
 
     #### Calculating the inverse of HPHT (KF structure) through SVD ####
-    ####U, G, V = mod.svd(HHT)     # considering P=1
+    U, G, V = mod.svd(HHT)     # considering P=1
     ####U, G, V = mod.svd(HKHT)
-    U, G, V = mod.svd(gama)
+    ####U, G, V = mod.svd(HPHT)
+    ####U, G, V = mod.svd(gama)
 
     ################### Last 3 singular values #########################
     svmin = np.min(G)
@@ -238,16 +264,17 @@ for n in range(1,run+1):
     
     #print 'HHTinv', HHTinv
     ################# Calculating the KF equivalent of dxds #############
-    dxds = np.dot((np.transpose(dsdx)),HHTinv)
+    ####dxds = np.dot((np.transpose(dsdx)),HHTinv)
     ####dxds = np.dot(K,np.dot(np.transpose(dsdx),HHTinv))    
-    
-    
+    ####dxds = np.dot(P,np.dot(np.transpose(dsdx),HHTinv))    
+    dxds = np.dot(P,np.dot(np.transpose(dsdx),newinv))
+
     ################# Multiplying it with (y - hx) ######################
     dx1 = np.dot(K,dxds)                        # considering an extra K 
     dx2 = np.dot(Ks,np.transpose((Y-S)))
     dx = np.dot(dx1,dx2)
     
-    ####dx = np.dot(dxds, np.transpose((Y-S)))  # (without extra k - does not work...) 
+    #dx = np.dot(dxds, np.transpose((Y-S)))  # (without extra k - does not work...) 
 
     dx = dx.reshape(D)  
     #print 'dx', dx
