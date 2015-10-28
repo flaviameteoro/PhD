@@ -168,8 +168,8 @@ for n in range(1,run+1):
     xx = x[:,n]
     ###xx = xx.reshape(D,1)
     Jac = Jac0
-    JacB = Jac0
-    
+    JacI = Jac0
+    diag = Jac0
 
     for m in range(2,M+1):
         for i in range(1,int(nTau)+1):
@@ -180,14 +180,14 @@ for n in range(1,run+1):
             Jacv = Jac.reshape(Jacsize)       # creates an array (Jacsize,)
             Jacvec = Jacv.reshape(Jacsize,1)  # creates an array (Jacsize,1)
             
-            JacvB = JacB.reshape(Jacsize)       # creates an array (Jacsize,)
-            JacvecB = JacvB.reshape(Jacsize,1)  # creates an array (Jacsize,1)
+            JacvI = JacI.reshape(Jacsize)       # creates an array (Jacsize,)
+            JacvecI = JacvI.reshape(Jacsize,1)  # creates an array (Jacsize,1)
 
             diagv = diag.reshape(Jacsize)       # creates an array (Jacsize,)
             diagvec = diagv.reshape(Jacsize,1)  # creates an array (Jacsize,1)
 
-            JacF, JacB, JacUdiag, JacLdiag = mod.rk4_J3(Jacvec,JacvecB,diagvec,D,xx,dt)               ########## in the 1st time diag is zeros!! ###########
-            Jac = JacF
+            Jac, JacI, JacDiag = mod.rk4_J3(Jacvec,JacvecI,diagvec,D,xx,dt)               ########## in the 1st time diag is zeros!! ###########
+            #Jac = JacF
             
             ####### Unperturbed inside-loop Lorenz runs##################            
             random = np.zeros(D)
@@ -211,7 +211,8 @@ for n in range(1,run+1):
         #test = np.dot(h,Jac)
         #print 'test', test.shape
         #print 'test', test
-        col = np.dot(Jac,np.transpose(h))
+        JacT = np.transpose(Jac)
+        col = np.dot(JacT,np.transpose(h))
         #print 'test2', test2.shape
         #print 'test2', test2
         col = col.reshape(D)
@@ -223,28 +224,25 @@ for n in range(1,run+1):
         ###(uses only the first elements of the resulting matrices)####
         
         ###### 1st Row ###########
-        HPHT_KS[0,idxs] = Jac[0,0]
+        JacI = np.transpose(JacI)
 
-        ###### Diagonal###########
-        if m == 2:
-            JacT = np.transpose(Jac)
-            diag1 = np.dot(JacT,Jac)
-            diag = diag1
-            HPHT_KS[idxs,idxs] = diag[0,0]
-        else:
-            diag2 = np.dot(np.transpose(JacUdiag),JacUdiag)
-            HPHT_KS[idxs,idxs] = diag2[0,0]
-            diag = diag2
+        HPHT_KS[0,idxs] = JacI[0,0]
 
         ###### 1st column ########
-        HPHT_KS[idxs,0] = JacB[0,0]
+        HPHT_KS[idxs,0] = Jac[0,0]
         #print 'HPHT_KS', HPHT_KS
 
+        ###### Diagonal###########
+        diag = np.transpose(JacDiag)
+        HPHT_KS[idxs,idxs] = diag[0,0]
+        
         if m > 2:
             ###### Upper diagonal ####
             HPHT_KS[idxs-1,idxs] = JacUdiag[0,0]
             ###### Lower diagonal ####
             HPHT_KS[idxs,idxs-1] = JacLdiag[0,0]
+
+        
 
 
    

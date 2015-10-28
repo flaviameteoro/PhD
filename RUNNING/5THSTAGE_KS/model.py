@@ -273,7 +273,7 @@ def rk4_J2(Xold,df,dt):
      
      return dfdx
 
-def rk4_J3(JvecF,JvecB,Diagv,JN,y,dt):
+def rk4_J3(JvecD,JvecI,Diagv,JN,y,dt):
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #% Runge-Kutta 4 ODE numerical integration scheme      %
     #%   Jvec - Initial Jacobian (vector)                  %
@@ -295,15 +295,15 @@ def rk4_J3(JvecF,JvecB,Diagv,JN,y,dt):
         dkdx[i,im1] = y[ip1] - y[im2]
         dkdx[i,im2] = -y[im1]
 
-     dkdxT = np.transpose(dkdx)
+     #dkdxT = np.transpose(dkdx)
 
-     #### Calculating the FORWARD propagation of the model ####
+     #### Calculating the "decreasing" P(i+1,j) propagation of the model ####
      #JN=len(Jvec)
      #Jacsize = JN**2
      #Jacvec = Jac.reshape(Jacsize) 
 
-     ###### For the 1st row of HPHT ########
-     Jold = JvecF.reshape(JN,JN)
+     ###### To construct the 1st column of HPHT ########
+     Jold = JvecD.reshape(JN,JN)
 
      Jz = Jold
      Jq = dt*(np.dot(dkdx,Jz))
@@ -321,11 +321,35 @@ def rk4_J3(JvecF,JvecB,Diagv,JN,y,dt):
      Jq = dt*(np.dot(dkdx,Jz))  
      J = J + Jq
 
-     JacF = Jold + J*(1/6.0)
+     JacD = Jold + J*(1/6.0)
+
+     #### Calculating the "increasing" P(i,j+1) propagation of the model ####
+
+     ###### To construct the 1st row of HPHT ########
+     JoldI = JvecI.reshape(JN,JN)
+
+     JzI = JoldI
+     JqI = dt*(np.dot(dkdx,JzI))
+     JI = JqI
+         
+     JzI = JoldI + 1/2.0*JqI
+     JqI = dt*(np.dot(dkdx,JzI))
+     JI = JI + 2*JqI
+     
+     JzI = JoldI + 1/2.0*JqI
+     JqI = dt*(np.dot(dkdx,JzI))
+     JI = JI + 2*JqI
+
+     JzI = JoldI + JqI
+     JqI = dt*(np.dot(dkdx,JzI))  
+     JI = JI + JqI
+
+     JacI = JoldI + JI*(1/6.0)
 
 
-     #### For the Upper diagonal of HPHT ####
+     ###################### Calculating the diagonal #########################
      JoldD = Diagv.reshape(JN,JN)
+     JoldD = np.dot(dkdx,JoldD)
 
      JzD = JoldD
      JqD = dt*(np.dot(dkdx,JzD))
@@ -343,54 +367,12 @@ def rk4_J3(JvecF,JvecB,Diagv,JN,y,dt):
      JqD = dt*(np.dot(dkdx,JzD))  
      JD = JD + JqD
 
-     JacUD = JoldD + JD*(1/6.0)
+     JacDiag = JoldD + JD*(1/6.0)
 
-
-     #### Calculating the BACKWARD propagation of the model ####
-
-     ###### For the 1st column of HPHT ########
-     JoldB = JvecB.reshape(JN,JN)
-
-     JzB = JoldB
-     JqB = dt*(np.dot(dkdxT,JzB))
-     JB = JqB
-         
-     JzB = JoldB + 1/2.0*JqB
-     JqB = dt*(np.dot(dkdxT,JzB))
-     JB = JB + 2*JqB
-     
-     JzB = JoldB + 1/2.0*JqB
-     JqB = dt*(np.dot(dkdxT,JzB))
-     JB = JB + 2*JqB
-
-     JzB = JoldB + JqB
-     JqB = dt*(np.dot(dkdxT,JzB))  
-     JB = JB + JqB
-
-     JacB = JoldB + JB*(1/6.0)
-
-     #### For the Lower diagonal of HPHT ######
-     JoldDB = Diagv.reshape(JN,JN)
-
-     JzDB = JoldDB
-     JqDB = dt*(np.dot(dkdxT,JzDB))
-     JDB = JqDB
-         
-     JzDB = JoldDB + 1/2.0*JqDB
-     JqDB = dt*(np.dot(dkdxT,JzDB))
-     JDB = JDB + 2*JqDB
-     
-     JzDB = JoldDB + 1/2.0*JqDB
-     JqDB = dt*(np.dot(dkdxT,JzDB))
-     JDB = JDB + 2*JqDB
-
-     JzDB = JoldDB + JqDB
-     JqDB = dt*(np.dot(dkdxT,JzDB))  
-     JDB = JDB + JqDB
-
-     JacLD = JoldDB + JDB*(1/6.0)
           
-     return JacF, JacB, JacUD, JacLD
+     return JacD, JacI, JacDiag
+
+
 
 
 def df(y):                      
