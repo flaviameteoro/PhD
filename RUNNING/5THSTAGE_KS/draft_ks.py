@@ -168,37 +168,75 @@ for n in range(1,run+1):
     xx = x[:,n]
     ###xx = xx.reshape(D,1)
     Jac = Jac0
-    JacI = Jac0
-    diag = Jac0
+    P = {}
+    P['11'] = Jac0
+    
+    idxs = 1
 
     for m in range(2,M+1):
+        #idxs = L*(m-1) #+ (L)    # attention to this (L)term, which should be (1:L) in case of more obs
+        ii = idxs - (m-1)
+        iid = idxs + 1
+
+        id1 = str(ii+1)+str(iid)
+        id2 = str(ii+1)+str(iid-1)
+        
+        id3 = str(iid)+str(ii+1)
+        id4 = str(iid-1)+str(ii+1)
+
+        id5 = str(iid)+str(iid)
+        id6 = str(iid-1)+str(iid-1)
+        
+        Jac2 = P[id2] 
+        Jac3 = P[id4]
+        Jac4 = P[id6]
+
         for i in range(1,int(nTau)+1):
             tt = t + dt*(i-1+(m-1)*nTau)
             
-            #######Jac calculation with Runge-Kutta4 scheme##############
+            ##########Jac calculation with Runge-Kutta4 scheme##############
+
+            ######################## Jac for P1HT ##########################
             Jacsize = D**2
             Jacv = Jac.reshape(Jacsize)       # creates an array (Jacsize,)
             Jacvec = Jacv.reshape(Jacsize,1)  # creates an array (Jacsize,1)
             
-            JacvI = JacI.reshape(Jacsize)       # creates an array (Jacsize,)
-            JacvecI = JacvI.reshape(Jacsize,1)  # creates an array (Jacsize,1)
-
-            diagv = diag.reshape(Jacsize)       # creates an array (Jacsize,)
-            diagvec = diagv.reshape(Jacsize,1)  # creates an array (Jacsize,1)
-
-            Jac, JacI, JacDiag = mod.rk4_J3(Jacvec,JacvecI,diagvec,D,xx,dt)               ########## in the 1st time diag is zeros!! ###########
+            Jac = mod.rk4_J3(Jacvec,D,xx,dt)  
             #Jac = JacF
             
-            ####### Unperturbed inside-loop Lorenz runs##################            
+            ######################## Jacs for HPHT_KS ######################
+            while ii >= 0:
+                Jacv2 = Jac2.reshape(Jacsize)       
+                Jacvec2 = Jacv2.reshape(Jacsize,1)  
+            
+                Jac2 = mod.rk4_J3(Jacvec2,D,xx,dt)  
+
+
+                Jacv3 = Jac3.reshape(Jacsize)       
+                Jacvec3 = Jacv3.reshape(Jacsize,1)  
+            
+                Jac3 = mod.rk4_J3(Jacvec3,D,xx,dt) 
+
+
+            Jacv4 = Jac4.reshape(Jacsize)       
+            Jacvec4 = Jacv4.reshape(Jacsize,1)  
+            
+            Jac4 = mod.rk4_J3(Jacvec4,D,xx,dt) 
+
+            ########## Unperturbed inside-loop Lorenz runs##################            
             random = np.zeros(D)
             #random = np.random.rand(D)-0.5
             xx = mod.lorenz96(xx,random,dt) 
 
         ### At the end of each cycle (10 step mini-loop) we get Jac1i constructed ###
         #print 'Jac1i', Jac
-            
+        
+        P[id1] = Jac2    
+        P[id3] = Jac3   
+        P[id5] = Jac4  
+
         ########### Constructing S and Y vectors #######################   
-        idxs = L*(m-1) #+ (L)    # attention to this (L)term, which should be (1:L) in case of more obs
+        
              
         S[:,idxs] = np.dot(h,xx)
         
@@ -222,27 +260,16 @@ for n in range(1,run+1):
 
         ################# Constructing HPHT_KS matrix #################
         ###(uses only the first elements of the resulting matrices)####
+        Jac2T = np.transpose(Jac2)
+        HPHT_KS[ii,idxs] = Jac2T[0,0]
+
+        HPHT_KS[idxs,ii] = Jac3[0,0]
+
+        Jac4T = np.transpose(Jac4)
+        HPHT_KS[idxs,idxs] = Jac4T[0,0]
         
-        ###### 1st Row ###########
-        JacI = np.transpose(JacI)
-
-        HPHT_KS[0,idxs] = JacI[0,0]
-
-        ###### 1st column ########
-        HPHT_KS[idxs,0] = Jac[0,0]
-        #print 'HPHT_KS', HPHT_KS
-
-        ###### Diagonal###########
-        diag = np.transpose(JacDiag)
-        HPHT_KS[idxs,idxs] = diag[0,0]
-        
-        if m > 2:
-            ###### Upper diagonal ####
-            HPHT_KS[idxs-1,idxs] = JacUdiag[0,0]
-            ###### Lower diagonal ####
-            HPHT_KS[idxs,idxs-1] = JacLdiag[0,0]
-
-        
+            
+        idxs = L*(m-1)
 
 
    
