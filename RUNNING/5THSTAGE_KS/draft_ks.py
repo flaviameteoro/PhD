@@ -169,107 +169,114 @@ for n in range(1,run+1):
     ###xx = xx.reshape(D,1)
     Jac = Jac0
     P = {}
-    P['11'] = Jac0
+    P['00'] = Jac0
     
-    idxs = 1
+    #idxs = 1
 
-    for m in range(2,M+1):
-        #idxs = L*(m-1) #+ (L)    # attention to this (L)term, which should be (1:L) in case of more obs
-        ii = idxs - (m-1)
-        iid = idxs + 1
+    for s in range(1,M):
+        idxs = s
+        for m in range(1,M):
+            #idxs = L*(m-1)        # attention to this (L)term, should be (1:L) if more obs
+            ii = idxs - m
+            iid = idxs + 1
 
-        id1 = str(ii+1)+str(iid)
-        id2 = str(ii+1)+str(iid-1)
+            id1 = str(ii)+str(iid-1)
+            id2 = str(ii)+str(iid-2)
         
-        id3 = str(iid)+str(ii+1)
-        id4 = str(iid-1)+str(ii+1)
+            id3 = str(iid-1)+str(ii)
+            id4 = str(iid-2)+str(ii)
 
-        id5 = str(iid)+str(iid)
-        id6 = str(iid-1)+str(iid-1)
+            id5 = str(iid-1)+str(iid-1)
+            id6 = str(iid-2)+str(iid-2)
         
-        Jac2 = P[id2] 
-        Jac3 = P[id4]
-        Jac4 = P[id6]
+            if ii >= 0:
+                Jac2 = P[id2] 
+                Jac3 = P[id4]
+                Jac4 = P[id6]
+                Jac4_old = Jac4
 
-        for i in range(1,int(nTau)+1):
-            tt = t + dt*(i-1+(m-1)*nTau)
+                for i in range(1,int(nTau)+1):
+                    ##########Jac calculation with Runge-Kutta4 scheme##############
+
+                    ######################## Jac for P1HT ##########################
+                    #Jacsize = D**2
+                    #Jacv = Jac.reshape(Jacsize)       # creates an array (Jacsize,)
+                    #Jacvec = Jacv.reshape(Jacsize,1)  # creates an array (Jacsize,1)
             
-            ##########Jac calculation with Runge-Kutta4 scheme##############
-
-            ######################## Jac for P1HT ##########################
-            Jacsize = D**2
-            Jacv = Jac.reshape(Jacsize)       # creates an array (Jacsize,)
-            Jacvec = Jacv.reshape(Jacsize,1)  # creates an array (Jacsize,1)
+                    #Jac = mod.rk4_J3(Jacvec,D,xx,dt)  
+                    #Jac = JacF
             
-            Jac = mod.rk4_J3(Jacvec,D,xx,dt)  
-            #Jac = JacF
+                    ############### Jacs for HPHT_KS and P1HT ######################
+                    Jacsize = D**2
+
+                    Jacv2 = Jac2.reshape(Jacsize)       
+                    Jacvec2 = Jacv2.reshape(Jacsize,1)  
             
-            ######################## Jacs for HPHT_KS ######################
-            while ii >= 0:
-                Jacv2 = Jac2.reshape(Jacsize)       
-                Jacvec2 = Jacv2.reshape(Jacsize,1)  
+                    Jac2 = mod.rk4_J3(Jacvec2,D,xx,dt)  
+
+
+                    Jacv3 = Jac3.reshape(Jacsize)       
+                    Jacvec3 = Jacv3.reshape(Jacsize,1)  
             
-                Jac2 = mod.rk4_J3(Jacvec2,D,xx,dt)  
+                    Jac3 = mod.rk4_J3(Jacvec3,D,xx,dt) 
 
+                
+                    Jacv4 = Jac4.reshape(Jacsize)       
+                    Jacvec4 = Jacv4.reshape(Jacsize,1)  
+                
+                    Jac4 = mod.rk4_J4(Jacvec4,D,xx,dt)   ### it runs another module to multiply dkdx with Jold!
 
-                Jacv3 = Jac3.reshape(Jacsize)       
-                Jacvec3 = Jacv3.reshape(Jacsize,1)  
-            
-                Jac3 = mod.rk4_J3(Jacvec3,D,xx,dt) 
+                    ########## Unperturbed inside-loop Lorenz runs##################            
+                    random = np.zeros(D)
+                    #random = np.random.rand(D)-0.5
+                    xx = mod.lorenz96(xx,random,dt) 
 
-
-            Jacv4 = Jac4.reshape(Jacsize)       
-            Jacvec4 = Jacv4.reshape(Jacsize,1)  
-            
-            Jac4 = mod.rk4_J3(Jacvec4,D,xx,dt) 
-
-            ########## Unperturbed inside-loop Lorenz runs##################            
-            random = np.zeros(D)
-            #random = np.random.rand(D)-0.5
-            xx = mod.lorenz96(xx,random,dt) 
-
-        ### At the end of each cycle (10 step mini-loop) we get Jac1i constructed ###
-        #print 'Jac1i', Jac
+                ### At the end of each cycle (10 step mini-loop) we get Jac1i constructed ###
+                #print 'Jac1i', Jac
         
-        P[id1] = Jac2    
-        P[id3] = Jac3   
-        P[id5] = Jac4  
+                P[id1] = Jac2    
+                P[id3] = Jac3   
+                P[id5] = Jac4  
+                ###print 'P', P
 
-        ########### Constructing S and Y vectors #######################   
+                ################# Constructing HPHT_KS matrix #################
+                ###(uses only the first elements of the resulting matrices)####
+                F1 = P[id1]            
+                F1T = np.transpose(F1)
+                HPHT_KS[ii,idxs] = F1T[0,0]
+
+                F2 = P[id3] 
+                HPHT_KS[idxs,ii] = F2[0,0]
+
+                F3 = P[id5]            
+                F3T = np.transpose(F3)
+                HPHT_KS[idxs,idxs] = F3T[0,0]
         
-             
-        S[:,idxs] = np.dot(h,xx)
+                ###print 'HPHT_KS', HPHT_KS
+
+                #################### Constructing P1HT matrix #################
+                #test = np.dot(h,Jac)
+                #print 'test', test.shape
+                #print 'test', test
+                #JacT = np.transpose(Jac)
+                #col = np.dot(JacT,np.transpose(h))
+                col = F1[:,0]
+                #print 'test2', test2.shape
+                #print 'test2', test2
+                ###col = col.reshape(D)
+                #print 'test2', test2 
+                P1HT[:,idxs] = col
+                print 'P1HT', P1HT 
+
+
+            ########### Constructing S and Y vectors #######################   
+            S[:,idxs] = np.dot(h,xx)
         
-        #idy = n+(m-1)*nTau
-        Y[:,idxs] = y[:,n+(m-1)*nTau]   # attention to y(0,...), which should increase in case of more obs
+            Y[:,idxs] = y[:,n+(m-1)*nTau]   # attention to y(0,...), which should increase in case of more obs
 
-        dsdx[idxs,:] = np.dot(h,Jac)
+            #dsdx[idxs,:] = np.dot(h,Jac)
         
-        #################### Constructing P1HT matrix #################
-        #test = np.dot(h,Jac)
-        #print 'test', test.shape
-        #print 'test', test
-        JacT = np.transpose(Jac)
-        col = np.dot(JacT,np.transpose(h))
-        #print 'test2', test2.shape
-        #print 'test2', test2
-        col = col.reshape(D)
-        #print 'test2', test2 
-        P1HT[:,idxs] = col
-        #print 'P1HT', P1HT 
-
-        ################# Constructing HPHT_KS matrix #################
-        ###(uses only the first elements of the resulting matrices)####
-        Jac2T = np.transpose(Jac2)
-        HPHT_KS[ii,idxs] = Jac2T[0,0]
-
-        HPHT_KS[idxs,ii] = Jac3[0,0]
-
-        Jac4T = np.transpose(Jac4)
-        HPHT_KS[idxs,idxs] = Jac4T[0,0]
-        
-            
-        idxs = L*(m-1)
+            #idxs = L*(m-1)
 
 
    

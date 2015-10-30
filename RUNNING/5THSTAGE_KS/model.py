@@ -273,7 +273,7 @@ def rk4_J2(Xold,df,dt):
      
      return dfdx
 
-def rk4_J3(JvecD,JvecI,Diagv,JN,y,dt):
+def rk4_J3(Jvec,JN,y,dt):
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #% Runge-Kutta 4 ODE numerical integration scheme      %
     #%   Jvec - Initial Jacobian (vector)                  %
@@ -297,13 +297,11 @@ def rk4_J3(JvecD,JvecI,Diagv,JN,y,dt):
 
      #dkdxT = np.transpose(dkdx)
 
-     #### Calculating the "decreasing" P(i+1,j) propagation of the model ####
      #JN=len(Jvec)
      #Jacsize = JN**2
      #Jacvec = Jac.reshape(Jacsize) 
 
-     ###### To construct the 1st column of HPHT ########
-     Jold = JvecD.reshape(JN,JN)
+     Jold = Jvec.reshape(JN,JN)
 
      Jz = Jold
      Jq = dt*(np.dot(dkdx,Jz))
@@ -321,58 +319,62 @@ def rk4_J3(JvecD,JvecI,Diagv,JN,y,dt):
      Jq = dt*(np.dot(dkdx,Jz))  
      J = J + Jq
 
-     JacD = Jold + J*(1/6.0)
+     Jac = Jold + J*(1/6.0)
 
-     #### Calculating the "increasing" P(i,j+1) propagation of the model ####
+               
+     return Jac
 
-     ###### To construct the 1st row of HPHT ########
-     JoldI = JvecI.reshape(JN,JN)
+def rk4_J4(JvecD,JN,y,dt):
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    #% Runge-Kutta 4 ODE numerical integration scheme      %
+    #%   Jvec - Initial Jacobian (vector)                  %
+    #%   dt - Time-step                                    %
+    #%                                                     %
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+     N = len(y)
+     dkdx = np.zeros([N,N])
+     for i in range(N):
+        #for j in range(N):
+        ip1 = i+1
+        if ip1>N-1: ip1 = ip1-N
+        im1 = i-1
+        if im1<0: im1 = im1+N
+        im2 = i-2
+        if im2<0: im2 = im2+N
+        dkdx[i,i] = -1
+        dkdx[i,ip1] = y[im1]
+        dkdx[i,im1] = y[ip1] - y[im2]
+        dkdx[i,im2] = -y[im1]
 
-     JzI = JoldI
-     JqI = dt*(np.dot(dkdx,JzI))
-     JI = JqI
+     #dkdxT = np.transpose(dkdx)
+
+     #JN=len(Jvec)
+     #Jacsize = JN**2
+     #Jacvec = Jac.reshape(Jacsize) 
+
+     Jold = JvecD.reshape(JN,JN)
+     Jold = np.dot(dkdx,Jold)
+
+     Jz = Jold
+     Jq = dt*(np.dot(dkdx,Jz))
+     J = Jq
          
-     JzI = JoldI + 1/2.0*JqI
-     JqI = dt*(np.dot(dkdx,JzI))
-     JI = JI + 2*JqI
+     Jz = Jold + 1/2.0*Jq
+     Jq = dt*(np.dot(dkdx,Jz))
+     J = J + 2*Jq
      
-     JzI = JoldI + 1/2.0*JqI
-     JqI = dt*(np.dot(dkdx,JzI))
-     JI = JI + 2*JqI
+     Jz = Jold + 1/2.0*Jq
+     Jq = dt*(np.dot(dkdx,Jz))
+     J = J + 2*Jq
 
-     JzI = JoldI + JqI
-     JqI = dt*(np.dot(dkdx,JzI))  
-     JI = JI + JqI
+     Jz = Jold + Jq
+     Jq = dt*(np.dot(dkdx,Jz))  
+     J = J + Jq
 
-     JacI = JoldI + JI*(1/6.0)
+     Jac = Jold + J*(1/6.0)
 
-
-     ###################### Calculating the diagonal #########################
-     JoldD = Diagv.reshape(JN,JN)
-     JoldD = np.dot(dkdx,JoldD)
-
-     JzD = JoldD
-     JqD = dt*(np.dot(dkdx,JzD))
-     JD = JqD
-         
-     JzD = JoldD + 1/2.0*JqD
-     JqD = dt*(np.dot(dkdx,JzD))
-     JD = JD + 2*JqD
-     
-     JzD = JoldD + 1/2.0*JqD
-     JqD = dt*(np.dot(dkdx,JzD))
-     JD = JD + 2*JqD
-
-     JzD = JoldD + JqD
-     JqD = dt*(np.dot(dkdx,JzD))  
-     JD = JD + JqD
-
-     JacDiag = JoldD + JD*(1/6.0)
-
-          
-     return JacD, JacI, JacDiag
-
-
+               
+     return JacD
 
 
 def df(y):                      
