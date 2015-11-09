@@ -71,101 +71,52 @@ print 'truth created'
 ################### Creating the obs ##################################
 y = np.zeros([L,N+1]) 
 
-### No noise for y (ok for seed=37)
+### No noise for y 
 y = np.dot(h,xtrue) 
 
-### Good noise values for y (for seed=37)
-### (noises are centralized in zero)
-#y = np.dot(h,xtrue) + np.random.uniform(0,1.2680e-04,N+1)-6.34e-05
-#y = np.dot(h,xtrue) + np.random.uniform(0,1.2680e-04,N+1)-9.34e-05  #(out of zero mean!)
-#y = np.dot(h,xtrue) + np.random.uniform(0,1.8680e-04,N+1)-9.34e-05
-
-### Noise that runs perfect until time step 1500 (for seed=37) 
-# and runs totally ok for seed=44!!!!
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.001,N+1)-0.0005
-#y = np.dot(h,xtrue) + np.random.normal(0,0.0005,N+1)     
-
-### Bad noise values for y (for seed=37)
-#y = np.dot(h,xtrue) + np.random.rand(N+1)-0.5
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.2,N+1)-0.1
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.01,N+1)-0.005
-###(for seed=18)
-#y = np.dot(h,xtrue) + np.random.normal(0,0.01,N+1) 
-
-### Noise that runs perfect using HHT + R until time step 200 (for seed=37) and 500 (for seed=18, K=40, max_rank=7) 
-#y = np.dot(h,xtrue) + np.random.normal(0,0.1,N+1)  #which gives the variance of 0.01  
-
+#y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01   #which gives the variance of 0.0001 
 #R = np.zeros([M, M])
 #for i in range(M):
-#    R[i,i] = 0.01
-
-### Noise that runs perfect until time step 1800 and 2300 (for seed=18, K=40, max_rank=7) 
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.002,N+1)-0.001
-
-### Noise that runs perfect using HHT + R:
-### until time step 2600 (for seed=18, K=10, max_rank=D)
-### until time step 800  (for seed=18, K=40, max_rank=D)
-### until time step 2000 (for seed=18, K=40, max_rank=9) 
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01   #which gives the variance of 0.0001 
-
-R = np.zeros([M, M])
-for i in range(M):
-    R[i,i] = 0.0001
-
-#y = np.dot(h,xtrue) + np.random.normal(0,0.001,N+1)  
+#    R[i,i] = 0.0001
 
 
 #################### Initialising matrices #############################
 Y = np.zeros([1,M])            
 S = np.zeros([1,M]) 
-dsdx = np.zeros([M,D])         
-dxds = np.zeros([D,M]) 
+diff = np.zeros([1,M])  
 
 P1HT = np.zeros([D,M]) 
 HPHT_KS = np.zeros([M,M]) 
 
-gama = np.zeros([M,M])   
-gamainv = np.zeros([M,M])   
-#P = (0.01)*np.diag(np.ones([D]))  
-P = np.zeros([D, D])
-
 xx = np.zeros([D,1])      
-xtran = np.zeros([D,1]) 
+xxx = np.zeros([D,nTau]) 
 
 Jac = np.zeros([D,D])    
-JacB = np.zeros([D,D])   
-diag = np.zeros([D,D])              
 
 for i in range(D):
     Jac[i,i] = 1.
 
 Jac0 = np.copy(Jac)   
 
-run = 3000
-
-oo = np.zeros([1,run+1])      #for observability calculation
-svmaxvec = np.zeros([1,run+1]) 
-svmaxvec2 = np.zeros([1,run+1]) 
-
-dlyaini = x[:,1] - xtrue[:,1]
-#print 'dlyaini', dlyaini
-
+run = 500
 
 
 ################### Main loop ##########################################
 for n in range(1,run+1):
-    t = (n-1)*dt
+    #t = (n-1)*dt
 
     S[:,0] = np.dot(h,x[:,n])   # this 0 term should be (0:L) in case of more obs
     Y[:,0] = y[:,n]             # this 0 term should be (0:L) in case of more obs
-    dsdx[0:L,:] = h
+    #print 'S', S   
+    #print 'Y', Y
+
     P1HT[:,0:L] = np.transpose(h)
     HPHT_KS[0,0] = h[:,0]
     #F1 = np.dot(np.transpose(Jac0),Jac0)
     #HPHT_KS[1,0] = F1[0,0]
 
     xx = x[:,n]
+    xxx[:,0] = xx 
     ###xx = xx.reshape(D,1)
     Jac = Jac0
     P = {}
@@ -175,6 +126,7 @@ for n in range(1,run+1):
 
     for s in range(1,M):
         idxs = s
+        xxx[:,0] = xx
         for m in range(1,M):
             #idxs = L*(m-1)        # attention to this (L)term, should be (1:L) if more obs
             ii = idxs - m
@@ -193,20 +145,17 @@ for n in range(1,run+1):
                 Jac2 = P[id2] 
                 Jac3 = P[id4]
                 Jac4 = P[id6]
-                Jac4_old = Jac4
+                #Jac4_old = Jac4
 
+                #xx = xxx[:,0] 
                 for i in range(1,int(nTau)+1):
                     ##########Jac calculation with Runge-Kutta4 scheme##############
+            
+                    ################# Jacs to construct P #######################
+                    xx = xxx[:,i-1]
+                    #print 'xx at', i, 'th cycle is', xx, 'for m =', m
 
-                    ######################## Jac for P1HT ##########################
-                    #Jacsize = D**2
-                    #Jacv = Jac.reshape(Jacsize)       # creates an array (Jacsize,)
-                    #Jacvec = Jacv.reshape(Jacsize,1)  # creates an array (Jacsize,1)
-            
-                    #Jac = mod.rk4_J3(Jacvec,D,xx,dt)  
-                    #Jac = JacF
-            
-                    ############### Jacs for HPHT_KS and P1HT ######################
+                    # Calculating all elements in the upper part of the diagonal#
                     Jacsize = D**2
 
                     Jacv2 = Jac2.reshape(Jacsize)       
@@ -214,133 +163,83 @@ for n in range(1,run+1):
             
                     Jac2 = mod.rk4_J3(Jacvec2,D,xx,dt)  
 
-
+                    # Calculating all elements in the lower part of the diagonal#
                     Jacv3 = Jac3.reshape(Jacsize)       
                     Jacvec3 = Jacv3.reshape(Jacsize,1)  
             
                     Jac3 = mod.rk4_J3(Jacvec3,D,xx,dt) 
 
+                    # Calculating all elements in the diagonal#                
+                    if m == 1:
+                        Jacv4 = Jac4.reshape(Jacsize)       
+                        Jacvec4 = Jacv4.reshape(Jacsize,1)  
                 
-                    Jacv4 = Jac4.reshape(Jacsize)       
-                    Jacvec4 = Jacv4.reshape(Jacsize,1)  
-                
-                    Jac4 = mod.rk4_J4(Jacvec4,D,xx,dt)   ### it runs another module to multiply dkdx with Jold!
+                        #Jac4 = mod.rk4_J4(Jacvec4,D,xx,dt)   ### it runs another module to multiply dkdx with Jold!
+                        Jac4 = mod.rk4_J5(Jacvec4,D,xx,dt)
+                    ########## Unperturbed inside-loop Lorenz runs################   
+                    if m == 1:         
+                        random = np.zeros(D)
+                        #random = np.random.rand(D)-0.5
 
-                    ########## Unperturbed inside-loop Lorenz runs##################            
-                    random = np.zeros(D)
-                    #random = np.random.rand(D)-0.5
-                    xx = mod.lorenz96(xx,random,dt) 
-
+                        xx = mod.lorenz96(xx,random,dt) 
+                        if i < nTau:
+                            xxx[:,i] = xx
+                        if i == 10:
+                            xxlast = xx
+                        #print 'xx at',i,'is', xx
+                        #xxlast = xx
                 ### At the end of each cycle (10 step mini-loop) we get Jac1i constructed ###
                 #print 'Jac1i', Jac
         
                 P[id1] = Jac2    
-                P[id3] = Jac3   
+                P[id3] = Jac3
+                #####P[id1] = np.transpose(Jac3)   
                 P[id5] = Jac4  
-                ###print 'P', P
+                #print 'P', P
 
                 ################# Constructing HPHT_KS matrix #################
                 ###(uses only the first elements of the resulting matrices)####
                 F1 = P[id1]            
                 F1T = np.transpose(F1)
                 HPHT_KS[ii,idxs] = F1T[0,0]
-
+                #####HPHT_KS[ii,idxs] = F1[0,0]                
+    
                 F2 = P[id3] 
                 HPHT_KS[idxs,ii] = F2[0,0]
-
-                F3 = P[id5]            
-                F3T = np.transpose(F3)
-                HPHT_KS[idxs,idxs] = F3T[0,0]
+                
+                if m == 1:
+                    F3 = P[id5]            
+                    F3T = np.transpose(F3)
+                    HPHT_KS[idxs,idxs] = F3T[0,0]
         
-                ###print 'HPHT_KS', HPHT_KS
+                #print 'HPHT_KS', HPHT_KS
 
                 #################### Constructing P1HT matrix #################
-                #test = np.dot(h,Jac)
-                #print 'test', test.shape
-                #print 'test', test
-                #JacT = np.transpose(Jac)
-                #col = np.dot(JacT,np.transpose(h))
                 col = F1[:,0]
-                #print 'test2', test2.shape
-                #print 'test2', test2
-                ###col = col.reshape(D)
-                #print 'test2', test2 
+                #row = F1T[0,:]
+
                 P1HT[:,idxs] = col
-                print 'P1HT', P1HT 
+                #P1HT[:,idxs] = row
+                #print 'P1HT', P1HT 
 
+        #print 'P', P
+        ########### Constructing S and Y vectors #######################   
+        S[:,idxs] = np.dot(h,xxlast)
+        #print 'xx for S', xxlast
+        Y[:,idxs] = y[:,n+(s*nTau)]   # attention to y(0,...), which should increase in case of more obs
+        #Y[:,idxs] = y[:,s*nTau] 
 
-            ########### Constructing S and Y vectors #######################   
-            S[:,idxs] = np.dot(h,xx)
-        
-            Y[:,idxs] = y[:,n+(m-1)*nTau]   # attention to y(0,...), which should increase in case of more obs
+        #print 'S', S   
+        #print 'Y', Y
+    #print 'HPHT_KS Before', HPHT_KS
+    #HPHT_KS = HPHT_KS + R
+    #print 'HPHT_KS After', HPHT_KS
 
-            #dsdx[idxs,:] = np.dot(h,Jac)
-        
-            #idxs = L*(m-1)
-
-
-   
-    #### Calculating dxds as a pseudoinverse using python function######
-    dxds = np.linalg.pinv(dsdx,rcond=pinv_tol)    
-    #dxds = dxds.round(decimals=4)     # Applied this as it was appearing in matlab code (1st row 1 0 0 0...)
-    
-    
-    ##### Calculating the supposed equivalent for KS structure##########
-
-
-    #(Use this inverse instead of SVD, as gama is a diagonal!!!!!!!)
-    ###dsdxt = np.transpose(dsdx)
-    ###for i in range(M):
-        ###gama[i,i] = np.dot(dsdx[i,:],dsdxt[:,i])
-    #####gama = np.dot(dsdx,dsdxt)
-    #print 'Gama1', gama
-    ###for i in range(M):
-        ###gamainv[i,i] = gama[i,i]**(-1) 
-    #print 'Gamainv', gamainv
-        
-    #####HHT = np.dot(dsdx,(np.transpose(dsdx)))
-    ####HHT = np.dot(dsdx,(np.transpose(dsdx)))+R
-    
-    #####dxdst = np.linalg.pinv(np.transpose(dsdx),rcond=pinv_tol)    
-    #####P = np.dot(dxds,np.dot(R,dxdst))
-    #P = 10*(np.dot(dxds,np.dot(R,dxdst)))
-    ####P1 = (np.dot(dxds,np.dot(R,dxdst)))
-    ####P2 = np.diag(P1)
-    ####P = np.zeros([D, D])
-    ####P = np.diag(P2)
-    #print 'P1', P1
-    #print 'P', P
-    ##P = (0.0001)*P
-    
-    #####newinv = (11.*R)
-    #print 'R', R
-    #print 'newinv', newinv
-
-    #####for i in range(len(R)):
-        #####newinv[i,i]=(newinv[i,i])**(-1)  
-    #print 'newinv', newinv  
-
-    ####HKHT = np.dot(dsdx,np.dot(K,(np.transpose(dsdx))))
-    ####HPHT = np.dot(dsdx,np.dot(P,(np.transpose(dsdx))))
-
-    ####HKHT = np.dot(dsdx,np.dot(K,(np.transpose(dsdx))))+R
-    ####HPHT = np.dot(dsdx,np.dot(P,(np.transpose(dsdx))))+R
-
-    #### Calculating the inverse of HPHT (KF structure) through SVD ####
-    ####U, G, V = mod.svd(HHT)     # considering P=1
-    ####U, G, V = mod.svd(HKHT)
-    ####U, G, V = mod.svd(HPHT)
-    U, G, V = mod.svd(gama)
-
-    ################### Last 3 singular values #########################
-    svmin = np.min(G)
-    
-    svmin2 = G[M-2]
-    
-    #svmin3 = G[M-3]
-
-
-    ################## Modifying G to use the max_pinv_rank ############
+    ########## Calculating the equivalent for KS structure##############
+    #### Calculating the inverse of HPHT through SVD ####
+    U, G, V = mod.svd(HPHT_KS)          # considering R=0
+    print 'G', G
+    #### Modifying G to use the max_pinv_rank ###########
     mask = np.ones(len(G)) 
     for k in range(len(G)):
         if G[k] >= pinv_tol:
@@ -351,70 +250,50 @@ for n in range(1,run+1):
     rr = min(max_pinv_rank,sum(mask)) 
 
     g = G[:rr]**(-1) 
-    
+    #print 'g', g
     Ginv = np.zeros((M, M))
     Ginv[:rr, :rr] = np.diag(g)
+    #print 'Ginv', Ginv   
+
+    ############## Calculating the inverse ##############
+    HPHTinv1 = np.dot((np.transpose(V[:,:])),(np.transpose(Ginv)))   
+    
+    HPHTinv = np.dot(HPHTinv1,(np.transpose(U[:,:])))  
+    
+    #print 'HPHTinv', HPHTinv
+
+    #HPHTi = np.linalg.pinv(HPHT_KS)
+    #print 'HPHTi', HPHTi
+
+    ##### Multiplying the whole term with (y - hx) ######
+    dx1 = np.dot(P1HT,HPHTinv)  
+    #print 'dx1', dx1 
+
+    ddd = Y[:,0] - S[:,0]
+    #print 'diff', diff
+    for i in range(M):
+       diff[:,i] = ddd  
+    #print diff
+
+    #dx = np.dot(dx1,np.transpose((Y-S)))
+    #dx = np.dot(dx1,np.transpose(Y))
+    dx = np.dot(dx1,np.transpose(diff))
+
+    #dx2 = np.dot(dx1,np.transpose((Y-S)))
+    #dx = np.dot(K,dx2)
         
-
-    ################# Calculating the inverse ###########################
-    HHTinv1 = np.dot((np.transpose(V[:,:])),(np.transpose(Ginv)))   
-    
-    HHTinv = np.dot(HHTinv1,(np.transpose(U[:,:])))  
-    
-    #print 'HHTinv', HHTinv
-    
-    ################# Calculating the KF equivalent of dxds #############
-    ####dxds = np.dot(np.transpose(dsdx),HHTinv)
-    ####dxds = np.dot(np.transpose(dsdx),gamainv)
-    ####dxds = np.dot(Jac,np.dot(np.transpose(dsdx),HHTinv))
-    ####dxds = np.dot(K,np.dot(np.transpose(dsdx),HHTinv))    
-    ####dxds = np.dot(P,np.dot(np.transpose(dsdx),HHTinv))    
-    ####dxds = np.dot(P,np.dot(np.transpose(dsdx),newinv))
-
-    ################# Multiplying it with (y - hx) ######################
-    dx1 = np.dot(K,dxds)                        # considering an extra K 
-    dx2 = np.dot(Ks,np.transpose((Y-S)))
-    dx = np.dot(dx1,dx2)
-    
-    ##dx = np.dot(dxds, np.transpose((Y-S)))  # (without extra k - does not work...) 
-
     dx = dx.reshape(D)  
+    #print 'x[:,n]', x[:,n]
     #print 'dx', dx
-    #print 'x[:,n]shape', x[:,n].shape
-    
-
-    ################ Running the coupled dynamics ######################
+    ############ Running the coupled dynamics ###########
     random = np.zeros(D)
-    x[:,n+1] = mod.rk4_end(x[:,n],dx,dt) #+ dx0           
+    x[:,n+1] = mod.rk4_end(x[:,n],dx,dt)        
+    #x[:,n+1] = x[:,n] + dx
 
+    #print 'xtrue[:,n+1]', xtrue[:,n+1]
+    #print 'x[:,n+1]', x[:,n+1]
 
-    ################ Calculating Lyapunov exponent #####################
-    dlya = x[:,n+1] - xtrue[:,n+1]
-    #print 'dlya', dlya
-    dl = abs(dlya/dlyaini)   
-    #print 'dl', dl
-    lya = (1/float(n))*(np.log(dl))
-    ##print 'Lyapunov exponent', lya
-    
-
-    ################ Plotting Lyapunov exponent #####################
-    #plt.figure(figsize=(12, 10)).suptitle('Lyapunov Exponents')
-    #if [any(item) in lya >0 
-    plt.figure(1).suptitle('Lyapunov Exponents for D=20, M=10, r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
-    plt.axhline(y=0, xmin=0, xmax=run, linewidth=1, color = 'm')
-    ##for i in range(D):   
-    ###for i in range(D):                   # to plot all variables!!
-        ###plt.subplot(D/4,4,i+1)           # to plot all variables!!
-    for i in range(D/3):
-        plt.subplot(np.ceil(D/8.0),2,i+1)  
-        if lya[i] >0:
-            plt.plot(n+1,lya[i],'y.',linewidth=2.0,label='truth')
-            plt.yscale('log')
-            plt.ylabel('x['+str(i)+']')
-            plt.hold(True)
-            
-        
-    ################ Calculating SE #################################
+    ########################## Calculating SE ############################
     dd = np.zeros([D,1])
     dd[:,0] = xtrue[:,n+1] - x[:,n+1]
     SE = np.sqrt(np.mean(np.square(dd)))            
@@ -423,44 +302,17 @@ for n in range(1,run+1):
     ##print '*************************************'
 
 
-    ################## Plotting SE and other variables ##############
+    ######### Plotting SE and other variables ###########
     #plt.figure(figsize=(12, 10)).suptitle('Synchronisation Error')
     plt.figure(2).suptitle('Synchronisation Error for D=20, M=10, r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
     plt.plot(n+1,SE,'b*') 
     plt.yscale('log')
     plt.hold(True)
     
-    plt.plot(n+1,svmin,'yo') 
-    plt.hold(True)
-
-    plt.plot(n+1,svmin2,'go') 
-    plt.hold(True)
-
-    #plt.plot(n+1,svmin3,'mo') 
-    #plt.hold(True)
-
-    #plt.plot(n+1,svmax,'r>') 
-    #plt.hold(True)
-
-    #plt.plot(n+1,ratioobs,'yo') 
-    #plt.hold(True)
-  
-    #plt.plot(n+1,condnumber,'m.') 
-    #plt.hold(True)
-
-    #plt.plot(n+1,obin,'m<') 
-    #plt.hold(True)
-
-    #plt.plot(n+1,difmax,'yo') 
-    #plt.hold(True)
-
-    #plt.plot(n+1,difmax2,'mo') 
-    #plt.hold(True)
-
-
-
+    
 plt.show()
 
+######################## Plotting variables ###############################
 plt.figure(figsize=(12, 10)).suptitle('Variables for D=20, M=10, r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
 for i in range(D/3):
     plt.subplot(np.ceil(D/8.0),2,i+1)
