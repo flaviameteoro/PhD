@@ -41,7 +41,7 @@ K1 = 11.e0*np.diag(np.ones([D]))
 
 ######### Setting tolerance and maximum for rank calculations ########
 pinv_tol =  (np.finfo(float).eps)#*max((M,D))#apparently same results as only 2.2204e-16
-max_pinv_rank = 9
+max_pinv_rank = M
 
 
 ################### Creating truth ###################################
@@ -98,7 +98,7 @@ for i in range(D):
 
 Jac0 = np.copy(Jac)   
 
-run = 150
+run = 500
 
 
 ################### Main loop ##########################################
@@ -176,12 +176,14 @@ for n in range(1,run+1):
                 if m == 1:
                         ########if i == 1:
                         ########    Jac4 = Jac3                     
-                        ########Jacv4 = Jac4.reshape(Jacsize)       
+                        #########   Jacv4 = Jac4.reshape(Jacsize)       
                         ########Jacvec4 = Jacv4.reshape(Jacsize,1) 
                     
                         ########Jac4 = mod.rk4_J3(Jacvec4,D,xx,dt) 
 
                     Jacv4 = Jac3.reshape(Jacsize)       
+                    #Jacv4 = Jac4.reshape(Jacsize) 
+
                     Jacvec4 = Jacv4.reshape(Jacsize,1)  
                 
                     Jac4 = mod.rk4_J3(Jacvec4,D,xx,dt)
@@ -240,16 +242,21 @@ for n in range(1,run+1):
         for i in range(1,int(nTau)+1):
             random = np.zeros(D)
             xx = mod.lorenz96(xx,random,dt) 
+        
+        ####random = np.zeros(D)
+        ####xx = mod.lorenz96(xx,random,dt) 
 
         ########### Constructing S and Y vectors #######################   
         S[:,idxs] = np.dot(h,xx)
         #print 'xx for S at m=', m, 'is', xxlast
-        Y[:,idxs] = y[:,n+(s*nTau)]   # attention to y(0,...), which should increase in case of more obs
+        Y[:,idxs] = y[:,n+(s*nTau)]   
+        #####Y[:,idxs] = y[:,n+s]         
         #Y[:,idxs] = y[:,s*nTau] 
 
         #print 'S', S   
         #print 'Y', Y
-    #print 'HPHT_KS Before', HPHT_KS
+    print 'P1HT', P1HT[0,:]
+    print 'HPHT_KS', HPHT_KS[0,:]
     #HPHT_KS = HPHT_KS + R
     #print 'HPHT_KS After', HPHT_KS
 
@@ -296,9 +303,9 @@ for n in range(1,run+1):
     dys = Y - S
     #print 'Y-S', dys
 
-    dx = np.dot(dx1,np.transpose((Y-S)))
+    #dx = np.dot(dx1,np.transpose((Y-S)))
     #dx = np.dot(dx1,np.transpose(Y))
-    #dx = np.dot(dx1,np.transpose(diff))
+    dx = np.dot(dx1,np.transpose(diff))
 
     #dx2 = np.dot(dx1,np.transpose((Y-S)))
     #dx2 = np.dot(dx1,np.transpose(diff))
@@ -310,8 +317,8 @@ for n in range(1,run+1):
     #print 'dx', dx
     ############ Running the coupled dynamics ###########
     random = np.zeros(D)
-    #x[:,n+1] = mod.rk4_end(x[:,n],dx,dt)        
-    x[:,n+1] = x[:,n] + dx
+    x[:,n+1] = mod.rk4_end(x[:,n],dx,dt)        
+    #x[:,n+1] = x[:,n] + dx
 
     #print 'xtrue[:,n+1]', xtrue[:,n+1]
     #print 'x[:,n+1]', x[:,n+1]
