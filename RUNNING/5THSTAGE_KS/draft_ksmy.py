@@ -41,7 +41,7 @@ K1 = 11.e0*np.diag(np.ones([D]))
 
 ######### Setting tolerance and maximum for rank calculations ########
 pinv_tol =  (np.finfo(float).eps)#*max((M,D))#apparently same results as only 2.2204e-16
-max_pinv_rank = M
+max_pinv_rank = M-2
 
 
 ################### Creating truth ###################################
@@ -99,7 +99,7 @@ for i in range(D):
 
 Jac0 = np.copy(Jac)   
 
-run = 500
+run = 300
 
 
 ################### Main loop ##########################################
@@ -111,7 +111,7 @@ for n in range(1,run+1):
     #print 'S', S   
     #print 'Y', Y
 
-    #P1HT[:,0:L] = np.transpose(h)
+    P1HT[:,0:L] = np.transpose(h)
     HPHT_KS[0,0] = h[:,0]
     #F1 = np.dot(np.transpose(Jac0),Jac0)
     #HPHT_KS[1,0] = F1[0,0]
@@ -127,11 +127,12 @@ for n in range(1,run+1):
     #idxs = 1
     
     for t in range(M):
+    #for t in range(1,M):
 
         for s in range(1,M):
             idxs = s
             #####xxx[:,0] = xxlast
-            #xxx[:,0] = xx
+            ###########xxx[:,0] = xx
 
             for m in range(1,M):
                 #idxs = L*(m-1)        # attention to this (L)term, should be (1:L) if more obs
@@ -153,12 +154,16 @@ for n in range(1,run+1):
                     Jac4 = P[id6]
                     #Jac4_old = Jac4
 
+                    #########################
+                    Jac2 = np.transpose(Jac2)
+                    #########################
+
                     #xx = xxx[:,0] 
                     #for i in range(1,int(nTau)+1):
                     ##########Jac calculation with Runge-Kutta4 scheme##############
             
                     ################# Jacs to construct P #######################
-                    #xx = xxx[:,i-1]
+                    ##############xx = xxx[:,s-1]
                     #print 'xx at', i, 'th cycle is', xx, 'for m =', m
 
                     # Calculating all elements in the upper part of the diagonal#
@@ -184,8 +189,12 @@ for n in range(1,run+1):
                     
                         ########Jac4 = mod.rk4_J3(Jacvec4,D,xx,dt) 
 
-                        Jacv4 = Jac3.reshape(Jacsize)       
-                        #Jacv4 = Jac4.reshape(Jacsize) 
+                        #########################
+                        Jac4 = np.transpose(Jac2)
+                        #########################
+
+                        #Jacv4 = Jac3.reshape(Jacsize)       
+                        Jacv4 = Jac4.reshape(Jacsize) 
 
                         Jacvec4 = Jacv4.reshape(Jacsize,1)  
                 
@@ -198,11 +207,11 @@ for n in range(1,run+1):
                     ###Jacvec4 = Jacv4.reshape(Jacsize,1) 
                     ###Jac4 = mod.rk4_J3(Jacvec4,D,xx,dt)
                     ########## Unperturbed inside-loop Lorenz runs################   
-                    #if m == 1:         
-                    ####random = np.zeros(D)
-                    ####xx = mod.lorenz96(xx,random,dt) 
+                    ##########if m == 1:         
+                        ########random = np.zeros(D)
+                        ########xx = mod.lorenz96(xx,random,dt) 
                     #if i < nTau:
-                    #    xxx[:,i] = xx
+                        ##############xxx[:,s] = xx
                     #if i == 10:
                     #    xxlast = xx
                         #print 'xxlast at m=',m,'is', xxlast
@@ -228,35 +237,43 @@ for n in range(1,run+1):
                 
                     if m == 1:
                         F3 = P[id5]            
-                        F3T = np.transpose(F3)
-                        HPHT_KS[idxs,idxs] = F3T[0,0]
+                        #######################################            
+                        ##########F3T = np.transpose(F3)
+                        ##########HPHT_KS[idxs,idxs] = F3T[0,0]
+                        #######################################
+                        HPHT_KS[idxs,idxs] = F3[0,0]
         
                     #print 'HPHT_KS', HPHT_KS
 
-        #################### Constructing P1HT matrix #################
-        col1 = P['09']
-        col = col1[:,0]
-        #row = F1T[0,:]
+                    #################### Constructing P1HT matrix #################
+                    col = F1[:,0]
+                    #col = F2[:,0]
+                    P1HT[:,idxs] = col
+                    #print 'P1HT', P1HT
 
-        P1HT[:,t] = col
-        #P1HT[:,idxs] = row
-        #print 'P1HT', P1HT 
+                if m == (M-1):         
+                    random = np.zeros(D)
+                    xx = mod.lorenz96(xx,random,dt) 
+        #################### Constructing P1HT matrix #################
+        ###col1 = P['09']
+        ###col = col1[:,0]
         
-        HPHT[:,t] = HPHT_KS[0,9]
-        #print 'P', P
-    
-        for i in range(1,int(nTau)+1):
-            random = np.zeros(D)
-            xx = mod.lorenz96(xx,random,dt) 
+        ###P1HT[:,t] = col
+      
+        ###HPHT[:,t] = HPHT_KS[0,9]
+            
+        ###for i in range(1,int(nTau)+1):
+            ###random = np.zeros(D)
+            ###xx = mod.lorenz96(xx,random,dt) 
         
-        ####random = np.zeros(D)
-        ####xx = mod.lorenz96(xx,random,dt) 
+        random = np.zeros(D)
+        xx = mod.lorenz96(xx,random,dt) 
 
         ########### Constructing S and Y vectors #######################   
-        #########S[:,idxs] = np.dot(h,xx)
+        S[:,t] = np.dot(h,xx)
         #print 'xx for S at m=', m, 'is', xxlast
-        #########Y[:,idxs] = y[:,n+(s*nTau)]   
-        #####Y[:,idxs] = y[:,n+s]         
+        Y[:,t] = y[:,n+(t*nTau)]   
+        ####Y[:,t] = y[:,n+t]         
         #Y[:,idxs] = y[:,s*nTau] 
 
         #print 'S', S   
@@ -270,7 +287,7 @@ for n in range(1,run+1):
     ########## Calculating the equivalent for KS structure##############
     #### Calculating the inverse of HPHT through SVD ####
     U, G, V = mod.svd(HPHT_KS)          # considering R=0
-    #print 'G', G
+    print 'G', G
     #### Modifying G to use the max_pinv_rank ###########
     mask = np.ones(len(G)) 
     for k in range(len(G)):
@@ -297,10 +314,11 @@ for n in range(1,run+1):
     #HPHTi = np.linalg.pinv(HPHT_KS)
     #print 'HPHTi', HPHTi
     
-    HPHTi = np.linalg.pinv(HPHT)
+    ###HPHTi = np.linalg.pinv(HPHT)
 
     ##### Multiplying the whole term with (y - hx) ######
-    dx1 = np.dot(P1HT,HPHTi)  
+    #dx1 = np.dot(P1HT,HPHTi)
+    dx1 = np.dot(P1HT,HPHTinv)    
     #print 'dx1', dx1 
 
     ddd = Y[:,0] - S[:,0]
@@ -312,10 +330,11 @@ for n in range(1,run+1):
     dys = Y - S
     #print 'Y-S', dys
 
-    #dx = np.dot(dx1,np.transpose((Y-S)))
+    dx = np.dot(dx1,np.transpose((Y-S)))
     #dx = np.dot(dx1,np.transpose(Y))
     #dx = np.dot(dx1,np.transpose(diff))
-    dx = np.dot(dx1,ddd)
+    #dx = np.dot(dx1,np.transpose(ddd))
+    #dx = np.dot(dx1,(Y-S))
 
     #dx2 = np.dot(dx1,np.transpose((Y-S)))
     #dx2 = np.dot(dx1,np.transpose(diff))
@@ -324,11 +343,11 @@ for n in range(1,run+1):
         
     dx = dx.reshape(D)  
     #print 'x[:,n]', x[:,n]
-    print 'dx', dx
+    #print 'dx', dx
     ############ Running the coupled dynamics ###########
     random = np.zeros(D)
-    #x[:,n+1] = mod.rk4_end(x[:,n],dx,dt)        
-    x[:,n+1] = x[:,n] + dx
+    x[:,n+1] = mod.rk4_end(x[:,n],dx,dt)        
+    #x[:,n+1] = x[:,n] + dx
 
     #print 'xtrue[:,n+1]', xtrue[:,n+1]
     #print 'x[:,n+1]', x[:,n+1]
