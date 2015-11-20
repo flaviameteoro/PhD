@@ -353,6 +353,7 @@ def rk4_J4(JvecD,JN,y,dt):
      #Jacvec = Jac.reshape(Jacsize) 
 
      Jold = JvecD.reshape(JN,JN)
+     
      Jold = np.dot(dkdx,Jold)
 
      Jz = Jold
@@ -371,11 +372,114 @@ def rk4_J4(JvecD,JN,y,dt):
      Jq = dt*(np.dot(dkdx,Jz))  
      J = J + Jq
 
-     Jac = Jold + J*(1/6.0)
+     JacD = Jold + J*(1/6.0)
 
                
      return JacD
 
+def rk4_J5(JvecD,JN,y,dt):
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    #% Runge-Kutta 4 ODE numerical integration scheme      %
+    #%   Jvec - Initial Jacobian (vector)                  %
+    #%   dt - Time-step                                    %
+    #%                                                     %
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+     N = len(y)
+     dkdx = np.zeros([N,N])
+     for i in range(N):
+        #for j in range(N):
+        ip1 = i+1
+        if ip1>N-1: ip1 = ip1-N
+        im1 = i-1
+        if im1<0: im1 = im1+N
+        im2 = i-2
+        if im2<0: im2 = im2+N
+        dkdx[i,i] = -1
+        dkdx[i,ip1] = y[im1]
+        dkdx[i,im1] = y[ip1] - y[im2]
+        dkdx[i,im2] = -y[im1]
+
+     #dkdxT = np.transpose(dkdx)
+
+     #JN=len(Jvec)
+     #Jacsize = JN**2
+     #Jacvec = Jac.reshape(Jacsize) 
+
+     Jold = JvecD.reshape(JN,JN)
+     
+     #Jold = np.dot(dkdx,Jold)
+
+     Jz = Jold
+     Jq = dt*(np.dot(dkdx,(np.dot(dkdx,Jz))))
+     J = Jq
+         
+     Jz = Jold + 1/2.0*Jq
+     Jq = dt*(np.dot(dkdx,(np.dot(dkdx,Jz))))
+     J = J + 2*Jq
+     
+     Jz = Jold + 1/2.0*Jq
+     Jq = dt*(np.dot(dkdx,(np.dot(dkdx,Jz))))
+     J = J + 2*Jq
+
+     Jz = Jold + Jq
+     Jq = dt*(np.dot(dkdx,(np.dot(dkdx,Jz))))
+     J = J + Jq
+
+     JacD = Jold + J*(1/6.0)
+
+               
+     return JacD
+
+def rk4_J6(Jvec,JN,y,dt):
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    #% Runge-Kutta 4 ODE numerical integration scheme      %
+    #%   Jvec - Initial Jacobian (vector)                  %
+    #%   dt - Time-step                                    %
+    #%                                                     %
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+     N = len(y)
+     dkdx = np.zeros([N,N])
+     for i in range(N):
+        #for j in range(N):
+        ip1 = i+1
+        if ip1>N-1: ip1 = ip1-N
+        im1 = i-1
+        if im1<0: im1 = im1+N
+        im2 = i-2
+        if im2<0: im2 = im2+N
+        dkdx[i,i] = -1
+        dkdx[i,ip1] = y[im1]
+        dkdx[i,im1] = y[ip1] - y[im2]
+        dkdx[i,im2] = -y[im1]
+
+     dkdxT = np.transpose(dkdx)
+
+     #JN=len(Jvec)
+     #Jacsize = JN**2
+     #Jacvec = Jac.reshape(Jacsize) 
+
+     Jold = Jvec.reshape(JN,JN)
+
+     Jz = Jold
+     Jq = dt*(np.dot(Jz,dkdxT))
+     J = Jq
+         
+     Jz = Jold + 1/2.0*Jq
+     Jq = dt*(np.dot(Jz,dkdxT))
+     J = J + 2*Jq
+     
+     Jz = Jold + 1/2.0*Jq
+     Jq = dt*(np.dot(Jz,dkdxT))
+     J = J + 2*Jq
+
+     Jz = Jold + Jq
+     Jq = dt*(np.dot(Jz,dkdxT))  
+     J = J + Jq
+
+     Jacd = Jold + J*(1/6.0)
+
+               
+     return Jacd
 
 def df(y):                      
     "Function to find dF/dx."
