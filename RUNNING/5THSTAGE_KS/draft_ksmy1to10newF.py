@@ -108,7 +108,7 @@ I = np.zeros([D,D])
 for i in range(D):
     I[i,i] = 1. 
 
-run = 300
+run = 1000
 
 
 ################### Main loop ##########################################
@@ -197,7 +197,7 @@ for n in range(1,run+1):
                 
                     #P[id22] = Jac2
                     #&&&&&P[id1] = Jac2
-                    #########Jac2 = np.transpose(Jac2)             ###CHECK IF THIS IS CORRECT###
+                    Jac2 = np.transpose(Jac2)             ###CHECK IF THIS IS CORRECT:YES###
                     P[id1] = Jac2 
                     #HPHT_KS[hi,iid-1] = Jac2[0,0]   
                     #&&&&HPHT_KS[0,idxs] = Jac2[0,0]   
@@ -217,7 +217,7 @@ for n in range(1,run+1):
                     #***P[id23] = Jac2
                     #P[id1] = Jac2
                     #&&&&&&&P[id21] = Jac2
-                    #########Jac2 = np.transpose(Jac2)           ###CHECK IF THIS IS CORRECT###
+                    #########Jac2 = np.transpose(Jac2)           ###NOT NEEDED?###
                     P[id21] = Jac2
                     #HPHT_KS[ii+1,iid-1] = Jac2[0,0]   
                     #&&&&HPHT_KS[m-1,idxs] = Jac2[0,0]   
@@ -364,14 +364,22 @@ for n in range(1,run+1):
     for i in range(M):
        diff[:,i] = ddd  
     #print diff
+    
+    hx = np.zeros([1,M])     
+    hx[:,0] = ddd
+    #print 'hx', hx
 
     dys = Y - S
     #print 'Y-S', dys
 
-    dx = np.dot(dx1,np.transpose((Y-S)))
+    Y[:,0] = ddd
+    #print 'Y', Y
+      
+    #dx = np.dot(dx1,np.transpose((Y-S)))
     #dx = np.dot(dx1,np.transpose(Y))
-    #dx = np.dot(dx1,np.transpose(diff))
-    #dx = np.dot(dx1,ddd)
+    #dx = np.dot(dx1,np.transpose(hx))
+    dx = np.dot(dx1,np.transpose(diff))
+    #dx = dx1*ddd
     #dx = np.dot(dx1,(Y-S))
 
     #dx2 = np.dot(dx1,np.transpose((Y-S)))
@@ -380,12 +388,19 @@ for n in range(1,run+1):
     #dx = np.dot(K,dx2)
         
     dx = dx.reshape(D)  
+    
+    #dx = dx[:,0]
+
     #print 'x[:,n]', x[:,n]
     print 'dx', dx
     ############ Running the coupled dynamics ###########
     random = np.zeros(D)
     #x[:,n+1] = mod.rk4_end(x[:,n],dx,dt)        
-    x[:,n+1] = x[:,n] + dx
+    #x[:,n+1] = x[:,n] + dx
+    
+    x[:,n] = x[:,n] + dx
+
+    x[:,n+1] = mod.lorenz96(x[:,n],random,dt) 
 
     #print 'xtrue[:,n+1]', xtrue[:,n+1]
     #print 'x[:,n+1]', x[:,n+1]
