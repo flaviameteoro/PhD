@@ -41,8 +41,7 @@ K1 = 11.e0*np.diag(np.ones([D]))
 
 ######### Setting tolerance and maximum for rank calculations ########
 pinv_tol =  (np.finfo(float).eps)#*max((M,D))#apparently same results as only 2.2204e-16
-max_pinv_rank = M-4              # means that we're considering (max_pinv_rank+1) sing values!
-
+max_pinv_rank = M-3              
 
 ################### Creating truth ###################################
 xtrue = np.zeros([D,N+1])
@@ -325,7 +324,7 @@ for n in range(1,run+1):
     ########## Calculating the equivalent for KS structure##############
     #### Calculating the inverse of HPHT through SVD ####
     U, G, V = mod.svd(HPHT_KS)          # considering R=0
-    print 'G', G
+    #print 'G', G
 
 
     ######## First and last 3 singular values ###########
@@ -337,7 +336,7 @@ for n in range(1,run+1):
     
     svmin3 = G[M-3]
 
-    svminlast = G[max_pinv_rank]
+    svminlast = G[max_pinv_rank-1]
 
     ############# Condition number calculation ##########
     condnumber = svmax/svminlast
@@ -537,12 +536,12 @@ for n in range(1,run+1):
         plt.xlabel('P[00]')
         plt.colorbar()   
         plt.subplot(1,3,2)
-        plt.imshow(P['019'],cmap=cmap)
-        plt.xlabel('P[019]')
+        plt.imshow(P['09'],cmap=cmap)
+        plt.xlabel('P[09]')
         plt.colorbar()   
         plt.subplot(1,3,3)
-        plt.imshow(P['1919'],cmap=cmap)
-        plt.xlabel('P[1919]')
+        plt.imshow(P['99'],cmap=cmap)
+        plt.xlabel('P[99]')
         plt.colorbar()   
         plt.savefig('P_n20.png')
         #plt.show()
@@ -558,12 +557,12 @@ for n in range(1,run+1):
         plt.xlabel('P[00]')
         plt.colorbar()   
         plt.subplot(1,3,2)
-        plt.imshow(P['019'],cmap=cmap)
-        plt.xlabel('P[019]')
+        plt.imshow(P['09'],cmap=cmap)
+        plt.xlabel('P[09]')
         plt.colorbar()   
         plt.subplot(1,3,3)
-        plt.imshow(P['1919'],cmap=cmap)
-        plt.xlabel('P[1919]')
+        plt.imshow(P['99'],cmap=cmap)
+        plt.xlabel('P[99]')
         plt.colorbar()   
         plt.savefig('P_n'+str(n)+'.png')
         #plt.show()
