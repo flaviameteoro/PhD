@@ -12,7 +12,7 @@ dt = 0.01    #original value=0.01
 D = 20 
 F=8.17
 
-M = 20
+M = 10
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
@@ -41,7 +41,7 @@ K1 = 11.e0*np.diag(np.ones([D]))
 
 ######### Setting tolerance and maximum for rank calculations ########
 pinv_tol =  (np.finfo(float).eps)#*max((M,D))#apparently same results as only 2.2204e-16
-max_pinv_rank = M-3              
+max_pinv_rank = M-4             
 
 ################### Creating truth ###################################
 xtrue = np.zeros([D,N+1])
@@ -102,12 +102,22 @@ for i in range(D):
 
 Jac0 = np.copy(Jac)  
 
+#Trying tridiagonal initialisation of Jac
+Jac_tri = np.zeros([D,D])    
+it,jt = np.indices(Jac_tri.shape)
+Jac_tri[it==jt] = 1.
+Jac_tri[it==jt-1] = 0.1
+Jac_tri[it==jt+1] = 0.1
+#print 'Jac_tri', Jac_tri
+
+#Jac0 = np.copy(Jac_tri)  
+
 I = np.zeros([D,D])    
 
 for i in range(D):
     I[i,i] = 1. 
 
-run = 1000
+run = 10
 
 dlyaini = x[:,1] - xtrue[:,1]
 
@@ -324,8 +334,13 @@ for n in range(1,run+1):
     ########## Calculating the equivalent for KS structure##############
     #### Calculating the inverse of HPHT through SVD ####
     U, G, V = mod.svd(HPHT_KS)          # considering R=0
-    #print 'G', G
+    print 'G', G
 
+    if n == run:
+        plt.figure(10).suptitle('Singular values spectrum')
+        plt.plot(G,'-') 
+        plt.yscale('log')
+        plt.hold(True)
 
     ######## First and last 3 singular values ###########
     svmax = np.max(G) 
@@ -341,7 +356,20 @@ for n in range(1,run+1):
     ############# Condition number calculation ##########
     condnumber = svmax/svminlast
 
-
+    ######## Dynamical rank according to tolerance ######
+    toler = G/svmax
+    #print 'tolerance', toler
+    
+    tol = np.ones(len(toler))
+    for l in range(len(toler)):
+        if toler[l] > 1.e-3:
+            tol[l] = 1
+        else:
+            tol[l] = 0
+    #max_pinv_rank = sum(tol)
+    print 'tol', tol
+    print 'rank is', max_pinv_rank
+ 
     #### Modifying G to use the max_pinv_rank ###########
     mask = np.ones(len(G)) 
     for k in range(len(G)):
@@ -398,10 +426,10 @@ for n in range(1,run+1):
     #Y[:,0] = ddd
     #print 'Y', Y
       
-    #dx = np.dot(dx1,np.transpose((Y-S)))
+    dx = np.dot(dx1,np.transpose((Y-S)))
     #dx = np.dot(dx1,np.transpose(Y))
     #dx = np.dot(dx1,np.transpose(hx))
-    dx = np.dot(dx1,np.transpose(diff))
+    #dx = np.dot(dx1,np.transpose(diff))
     #dx = dx1*ddd
     #dx = np.dot(dx1,(Y-S))
 
