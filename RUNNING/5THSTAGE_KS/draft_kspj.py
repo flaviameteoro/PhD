@@ -5,11 +5,11 @@ import matplotlib.pyplot as plt
 import model as mod
 
 #################### Initial settings ################################
-N = 300   # number of time steps
+N = 10000   # number of time steps
 Obs = 10     # number of observation times
 dt = 0.01    # time step original value=0.01
 
-D = 20    # dimension of state vector
+D = 10    # dimension of state vector
 F=8.17    # forcing in L96 model
 
 M = 10   # dimensional time delays
@@ -41,7 +41,7 @@ K1 = 11.e0*np.diag(np.ones([D]))
 
 ######### Setting tolerance and maximum for rank calculations ########
 pinv_tol =  (np.finfo(float).eps)
-max_pinv_rank = M-7             
+max_pinv_rank = M            
 
 ################### Creating truth ###################################
 xtrue = np.zeros([D,N+1])
@@ -138,7 +138,7 @@ Jac_tri[it==jt+1] = 0.1
 #for i in range(D):
 #    I[i,i] = 1. 
 
-run = 200   # so this is also number of time step???
+run = 400   # so this is also number of time step???
 
 dlyaini = x[:,0] - xtrue[:,0]
 
@@ -266,7 +266,7 @@ for n in range(1,run+1):
     ########## Calculating the equivalent for KS structure##############
     #### Calculating the inverse of HPHT through SVD ####
     U, G, V = mod.svd(HPHT_KS)          # considering R=0
-    #print 'G', G
+    print 'G', G
 
     #if n == run:
     if np.mod(n,10) == 0:
@@ -301,7 +301,7 @@ for n in range(1,run+1):
 
     tol = np.ones(len(toler))
     for l in range(len(toler)):
-        if toler[l] > 1.e-4:
+        if toler[l] > 1.e-3:
             tol[l] = 1
         else:
             tol[l] = 0
@@ -314,12 +314,23 @@ for n in range(1,run+1):
     for j in range(len(G)-2):
         svdiff = G[j]-G[j+2]
         #print 'Svdiff', svdiff
-        svgrad = svdiff - G[j+2]
+        svgrad = abs(svdiff - G[j+2])
         #print 'svgrad', svgrad     
         ###if svgrad < G[j+2]:
-            ###max_pinv_rank = j 
+            ###max_pinv_rank = j+1 
             ###break
     ###print 'rank is', max_pinv_rank
+
+
+    ### Option 3 - Dynamical rank according to slope ##
+    for j in range(len(G)-1):
+        svdiff2 = G[j]-G[j+1]
+        #print 'Svdiff', svdiff
+        if svdiff2 < 0.4:
+            max_pinv_rank = j
+            break
+    print 'rank is', max_pinv_rank
+
 
     #### Modifying G to use the max_pinv_rank ###########
     mask = np.ones(len(G)) 
@@ -536,7 +547,8 @@ for n in range(1,run+1):
 
 ######################## Plotting variables ###############################
 plt.figure(figsize=(12, 10)).suptitle('Variables for D=20, M=10, r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
-for i in range(D/2):
+#for i in range(D/2):
+for i in range(D):
     #plt.subplot(np.ceil(D/8.0),2,i+1)
     plt.subplot(5,2,i+1)
     if i == 0:  
