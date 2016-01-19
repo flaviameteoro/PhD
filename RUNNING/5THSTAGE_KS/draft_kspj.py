@@ -12,7 +12,7 @@ dt = 0.01    # time step original value=0.01
 D = 10    # dimension of state vector
 F=8.17    # forcing in L96 model
 
-M = 10   # dimensional time delays
+M = 20   # dimensional time delays
 tau= 0.1 # constant time delay
 #nTau = tau/dt  # 
 print 'D=', D, 'variables and M=', M ,'time-delays'
@@ -138,7 +138,7 @@ Jac_tri[it==jt+1] = 0.1
 #for i in range(D):
 #    I[i,i] = 1. 
 
-run = 400   # so this is also number of time step???
+run = 200   # so this is also number of time step???
 
 dlyaini = x[:,0] - xtrue[:,0]
 
@@ -326,10 +326,22 @@ for n in range(1,run+1):
     for j in range(len(G)-1):
         svdiff2 = G[j]-G[j+1]
         #print 'Svdiff', svdiff
-        if svdiff2 < 0.4:
+        if svdiff2 < 1.e-1:
             max_pinv_rank = j
             break
     print 'rank is', max_pinv_rank
+
+
+    ### Option 4 - Dynamical rank according to slope and difference ##
+    for j in range(len(G)-1):
+        svdiff3 = G[j]-G[j+1]
+        #print 'Svdiff', svdiff
+        svgrad2 = abs(G[j] - svdiff3)
+        #print 'svgrad', svgrad     
+        ###if svgrad2 < 1.e-1:
+            ###max_pinv_rank = j+1 
+            ###break
+    ###print 'rank is', max_pinv_rank
 
 
     #### Modifying G to use the max_pinv_rank ###########
@@ -435,27 +447,30 @@ for n in range(1,run+1):
 
     ######### Plotting SE and other variables ###########
     #plt.figure(figsize=(12, 10)).suptitle('Synchronisation Error')
-    plt.figure(2).suptitle('Synchronisation Error for D=20, M=10, r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
+    plt.figure(2).suptitle('Synchronisation Error for D='+str(D)+', M='+str(M)+', r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
     ###plt.plot(n+1,SE,'b*') 
     plt.plot(n,SE,'b*') 
-    plt.yscale('log')
+    #plt.yscale('log')
     plt.hold(True)
 
     ###plt.plot(n+1,svmin,'yo') 
-    plt.plot(n,svmin,'yo') 
-    plt.hold(True)
+    #plt.plot(n,svmin,'yo') 
+    #plt.hold(True)
 
     ###plt.plot(n+1,svmax,'go') 
-    plt.plot(n,svmax,'go') 
-    plt.hold(True)
+    #plt.plot(n,svmax,'go') 
+    #plt.hold(True)
 
     ###plt.plot(n+1,svminlast,'bo') 
-    plt.plot(n,svminlast,'bo') 
-    plt.hold(True)
+    #plt.plot(n,svminlast,'bo') 
+    #plt.hold(True)
 
     ###plt.plot(n+1,condnumber,'c*') 
-    plt.plot(n,condnumber,'c*') 
-    plt.yscale('log')
+    #plt.plot(n,condnumber,'c*') 
+    #plt.yscale('log')
+    #plt.hold(True)
+
+    plt.plot(n,max_pinv_rank,'bo') 
     plt.hold(True)
 
     plt.savefig('SE.png')
@@ -484,26 +499,26 @@ for n in range(1,run+1):
 #plt.show()
         
     cmap=plt.get_cmap('RdBu')
-    plt.figure(4).suptitle('P Matrix at time 20')
-    if n == 20:
+    plt.figure(4).suptitle('P Matrix at time 150')
+    if n == 150:
         #for i in range(2):
         plt.subplot(1,3,1)
         plt.imshow(P['00'],cmap=cmap)
         plt.xlabel('P[00]')
         plt.colorbar()   
         plt.subplot(1,3,2)
-        plt.imshow(P['09'],cmap=cmap)
-        plt.xlabel('P[09]')
+        plt.imshow(P['04'],cmap=cmap)
+        plt.xlabel('P[04]')
         plt.colorbar()   
         plt.subplot(1,3,3)
-        plt.imshow(P['99'],cmap=cmap)
-        plt.xlabel('P[99]')
+        plt.imshow(P['44'],cmap=cmap)
+        plt.xlabel('P[44]')
         plt.colorbar()   
         plt.savefig('P_n20.png')
         #plt.show()
 
     #if np.mod(n,10) == 0:
-    if n == run:
+    if n == 175:
         cmap=plt.get_cmap('RdBu')
         plt.figure(5).suptitle('P Matrix at time'+str(n)+'')
     #if np.mod(n,10) == 0:
@@ -513,12 +528,12 @@ for n in range(1,run+1):
         plt.xlabel('P[00]')
         plt.colorbar()   
         plt.subplot(1,3,2)
-        plt.imshow(P['09'],cmap=cmap)
-        plt.xlabel('P[09]')
+        plt.imshow(P['04'],cmap=cmap)
+        plt.xlabel('P[04]')
         plt.colorbar()   
         plt.subplot(1,3,3)
-        plt.imshow(P['99'],cmap=cmap)
-        plt.xlabel('P[99]')
+        plt.imshow(P['44'],cmap=cmap)
+        plt.xlabel('P[44]')
         plt.colorbar()   
         plt.savefig('P_n'+str(n)+'.png')
         #plt.show()
@@ -546,7 +561,7 @@ for n in range(1,run+1):
     #        plt.savefig('P1_n'+str(n)+'.png')
 
 ######################## Plotting variables ###############################
-plt.figure(figsize=(12, 10)).suptitle('Variables for D=20, M=10, r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
+plt.figure(figsize=(12, 10)).suptitle('Variables for D='+str(D)+', M='+str(M)+', r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
 #for i in range(D/2):
 for i in range(D):
     #plt.subplot(np.ceil(D/8.0),2,i+1)
