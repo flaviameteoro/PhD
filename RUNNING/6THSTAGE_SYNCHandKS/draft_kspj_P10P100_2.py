@@ -103,8 +103,12 @@ S = np.zeros([1,M])
 diff = np.zeros([1,M])  
 
 
-P1HT = np.zeros([D,M]) 
-HPHT_KS = np.zeros([M,M]) 
+PHT = np.zeros([D,M]) 
+HPHT = np.zeros([M,M]) 
+
+#P1HT = np.zeros([D,M]) 
+#HPHT_KS = np.zeros([M,M]) 
+
 #HPHT = np.zeros([1,M])   #THIS IS STRANGE, SHOULD BE SYMMETRIX MATRIX
  
 
@@ -159,15 +163,24 @@ for n in range(1,run+1):
     #print 'S', S   
     #print 'Y', Y
 
-    P1HT[:,0:L] = np.transpose(h)
-    HPHT_KS[0,0] = h[:,0] * np.transpose(h[:,0])
+    #P1HT[:,0:L] = np.transpose(h)
+    #HPHT_KS[0,0] = h[:,0] * np.transpose(h[:,0])
 
+    PHT[:,0:L] = np.transpose(h)
+    HPHT[0,0] = h[:,0] * np.transpose(h[:,0])
+    
     xx = x[:,n-1]
 
     Jac = Jac0
     P = {}
     P['00'] = Jac0
 
+    newP = {}    
+
+    counts = 0 
+    counts2 = 0 
+    countH = 2   
+    
     # The big P 100x100 matrix will be constructed in tiles mode #
     # 1 tile is like an inverted L # 
     # It is constructed from the left to the right #
@@ -221,7 +234,7 @@ for n in range(1,run+1):
                     Jac2 = np.transpose(Jac2)             
                     P[id1] = Jac2 
 
-                    HPHT_KS[0,idxs] = Jac2[0,0]   
+                    #HPHT_KS[0,idxs] = Jac2[0,0]   
 
                 if m > 1:
                     # Calculating all elements in the upper part of the diagonal#
@@ -234,7 +247,7 @@ for n in range(1,run+1):
 
                     P[id21] = Jac2
 
-                    HPHT_KS[m-1,idxs] = Jac2[0,0]   
+                    #HPHT_KS[m-1,idxs] = Jac2[0,0]   
     
                 # Calculating all elements in the lower part of the diagonal#
                 Jac3 = P[id4]
@@ -272,21 +285,108 @@ for n in range(1,run+1):
             if m > s:
                 random = np.zeros(D)
                 xx = mod.lorenz96(xx,random,dt) 
+                
+                #if s == 1:
+                    
+                #if m == (M-1): 
+                    
+                break
+                
+        if s == 1:
+            xf = xx
 
-                ########### Constructing S and Y vectors #######################   
-                S[:,s-1] = np.dot(h,xx)
+            ## Constructing initial S and Y vectors ##
+            S[:,s-1] = np.dot(h,xx)
+            Y[:,s-1] = y[:,n]  
 
-                Y[:,s-1] = y[:,n+(s-1)]         
-    
-                if s == 1:
-                    xf = xx
-
-        if s == (M-1):            
+        ## Calculating S and Y at each 10 time steps ##
+        tens = (M-1)+counts2
+        if s == tens:
             random = np.zeros(D)
             xx = mod.lorenz96(xx,random,dt) 
 
-            S[:,M-1] = np.dot(h,xx)
-            Y[:,M-1] = y[:,n+s] 
+            S[:,counts+1] = np.dot(h,xx)
+            Y[:,counts+1] = y[:,tens+1]      
+   
+            counts = counts + 1
+            counts2 = counts2 + 10
+
+            ## Constructing new P matrix by extracting only main submatrices (each 10th) ##
+            # At the same time, construct HPHT with 1st elements#
+            # 1st quadrant #
+            if s == (M-1):
+                i1 = str(0)+str(s)
+                i2 = str(s)+str(0)
+                i3 = str(s)+str(s)
+
+                newP['00'] = P['00'] 
+                HPHT_temp = newP['00']
+                HPHT[0,0] = HPHT_temp[0,0]
+
+                newP[i1] = P[i1]
+                HPHT_temp = newP[i1]
+                HPHT[0,1] = HPHT_temp[0,0]
+
+                newP[i2] = P[i2]
+                HPHT_temp = newP[i2]
+                HPHT[1,0] = HPHT_temp[0,0]
+
+                newP[i3] = P[i3]
+                HPHT_temp = newP[i3]
+                HPHT[1,1] = HPHT_temp[0,0]
+                
+            # Other tiles #
+            else:
+                # Border and diagonal main submatrices are extracted #
+                # At the same time, construct HPHT with 1st elements#
+                iup = str(0)+str(s)
+                idiag = str(s)+str(s)
+                idown = str(s)+str(0)
+               
+                newP[iup] = P[iup]
+                HPHT_temp = newP[iup]
+                HPHT[0,countH] = HPHT_temp[0,0]
+
+                newP[idiag] = P[idiag]
+                HPHT_temp = newP[iup]
+                HPHT[countH,countH] = HPHT_temp[0,0]
+
+                newP[idown] = P[idown]
+                HPHT_temp = newP[iup]
+                HPHT[countH,0] = HPHT_temp[0,0]
+
+                #countH = countH + 1
+
+                # Internal main submatrices are extracted #
+                # At the same time, construct HPHT with 1st elements#
+                for u in range(10,Obs,M):
+                    i_rowcol = s - u                
+                    if i_rowcol < 0:
+                        break
+                    iup2 = str(i_rowcol)+str(s)
+                    idown2 = str(s)+str(i_rowcol)
+
+                    newP[iup2] = P[iup2]
+                    HPHT_temp = newP[iup2]
+                    HPHT[,countH+1] = HPHT_temp[0,0]
+
+                    newP[idown2] = P[idown2]
+
+                    countH = countH + 1
+
+    #################### Constructing PHT matrix #################
+    countPHT = 1    
+    for z in range(M-1,Obs-M,10):     
+        icol = str(0)+str(z)          
+        PHTcol = newP[icol]
+
+        PHT[:,countPHT] = PHTcol[:,0]
+        countPHT = countPHT + 1
+
+    #################### Constructing HPHT matrix #################
+    
+
+
 
     ######### Considering obs errors - R ###############################
     #print 'HPHT_KS', HPHT_KS
