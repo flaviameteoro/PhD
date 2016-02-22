@@ -187,7 +187,7 @@ for n in range(1,run+1):
     # It gets bigger at each s #
 
     ### Each s corresponds to 1 tile fully constructed ###
-    for s in range(1,Obs):
+    for s in range(1,Obs-M):
         #if s < M:            
         #    idxs = s
         #else:
@@ -196,7 +196,7 @@ for n in range(1,run+1):
         idxs = s
         
         ### Each m corresponds to steps to construct 1 tile ###
-        for m in range(1,Obs):
+        for m in range(1,Obs-M):
             # Defining dictionary entries (beginning by 00) #
             ii = idxs - m
             iid = idxs + 1
@@ -285,7 +285,7 @@ for n in range(1,run+1):
             if m > s:
                 random = np.zeros(D)
                 xx = mod.lorenz96(xx,random,dt) 
-                
+                ###print 'xx for s=', s, 'is', xx
                 #if s == 1:
                     
                 #if m == (M-1): 
@@ -294,6 +294,7 @@ for n in range(1,run+1):
                 
         if s == 1:
             xf = xx
+            #print 'xx for 1st S', xx
 
             ## Constructing initial S and Y vectors ##
             S[:,s-1] = np.dot(h,xx)
@@ -302,14 +303,21 @@ for n in range(1,run+1):
         ## Calculating S and Y at each 10 time steps ##
         tens = (M-1)+counts2
         if s == tens:
-            random = np.zeros(D)
-            xx = mod.lorenz96(xx,random,dt) 
+            #random = np.zeros(D)
+            #xx = mod.lorenz96(xx,random,dt) 
+            #print 'xx for s=', s, 'is', xx
 
             S[:,counts+1] = np.dot(h,xx)
-            Y[:,counts+1] = y[:,tens+1]      
-   
+            #Y[:,counts+1] = y[:,tens+1]      
+            Y[:,counts+1] = y[:,tens]      
+
             counts = counts + 1
             counts2 = counts2 + 10
+
+            if s == (Obs-M)-1:
+                random = np.zeros(D)
+                xx = mod.lorenz96(xx,random,dt) 
+                ###print 'xx for s=', s, 'is', xx
 
             ## Constructing new P matrix by extracting only main submatrices (each 10th) ##
             # At the same time, construct HPHT with 1st elements#
@@ -348,46 +356,49 @@ for n in range(1,run+1):
                 HPHT[0,countH] = HPHT_temp[0,0]
 
                 newP[idiag] = P[idiag]
-                HPHT_temp = newP[iup]
+                HPHT_temp = newP[idiag]
                 HPHT[countH,countH] = HPHT_temp[0,0]
 
                 newP[idown] = P[idown]
-                HPHT_temp = newP[iup]
+                HPHT_temp = newP[idown]
                 HPHT[countH,0] = HPHT_temp[0,0]
 
                 #countH = countH + 1
 
                 # Internal main submatrices are extracted #
                 # At the same time, construct HPHT with 1st elements#
+                countHup = countH
                 for u in range(10,Obs,M):
                     i_rowcol = s - u                
                     if i_rowcol < 0:
                         break
+                    countHup = countHup - 1
+                    
                     iup2 = str(i_rowcol)+str(s)
                     idown2 = str(s)+str(i_rowcol)
 
                     newP[iup2] = P[iup2]
                     HPHT_temp = newP[iup2]
-                    HPHT[,countH+1] = HPHT_temp[0,0]
+                    HPHT[countHup,countH] = HPHT_temp[0,0]
 
                     newP[idown2] = P[idown2]
+                    HPHT_temp = newP[idown2]
+                    HPHT[countH,countHup] = HPHT_temp[0,0]
 
-                    countH = countH + 1
+                countH = countH + 1
 
     #################### Constructing PHT matrix #################
     countPHT = 1    
     for z in range(M-1,Obs-M,10):     
         icol = str(0)+str(z)          
+        
         PHTcol = newP[icol]
 
         PHT[:,countPHT] = PHTcol[:,0]
+        
         countPHT = countPHT + 1
 
-    #################### Constructing HPHT matrix #################
     
-
-
-
     ######### Considering obs errors - R ###############################
     #print 'HPHT_KS', HPHT_KS
     ####HPHT_KS = HPHT_KS + R
@@ -396,7 +407,7 @@ for n in range(1,run+1):
 
     ########## Calculating the equivalent for KS structure##############
     #### Calculating the inverse of HPHT through SVD ####
-    U, G, V = mod.svd(HPHT_KS)          # considering R=0
+    U, G, V = mod.svd(HPHT)          # considering R=0
     #print 'G', G
 
     #if n == run:
@@ -457,10 +468,10 @@ for n in range(1,run+1):
     for j in range(len(G)-1):
         svdiff2 = G[j]-G[j+1]
         
-        if svdiff2 < 0.4:
-            max_pinv_rank = j
-            break
-    print 'rank is', max_pinv_rank
+        ###if svdiff2 < 0.4:
+            ###max_pinv_rank = j
+            ###break
+    ###print 'rank is', max_pinv_rank
 
 
     ### Option 4 - Dynamical rank according to slope and difference ##
@@ -503,7 +514,7 @@ for n in range(1,run+1):
     HPHTinv = np.dot(HPHTinv1,(np.transpose(U[:,:])))  
     
     ##### Multiplying the whole term with (y - hx) ######
-    dx1 = np.dot(P1HT,HPHTinv)  
+    dx1 = np.dot(PHT,HPHTinv)  
     
     # print 'dx1', dx1 
 
