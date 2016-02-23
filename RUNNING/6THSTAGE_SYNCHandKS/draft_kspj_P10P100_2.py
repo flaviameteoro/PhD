@@ -45,7 +45,7 @@ K1 = 11.e0*np.diag(np.ones([D]))
 
 ######### Setting tolerance and maximum for rank calculations ########
 pinv_tol =  (np.finfo(float).eps)
-max_pinv_rank = M            
+max_pinv_rank = M-8            
 
 
 ################### Creating truth ###################################
@@ -150,7 +150,7 @@ Jac_tri[it==jt+1] = 0.1
 #for i in range(D):
 #    I[i,i] = 1. 
 
-run = 100   # so this is also number of time step
+run = 500   # so this is also number of time step
 
 dlyaini = x[:,0] - xtrue[:,0]
 
@@ -182,7 +182,7 @@ for n in range(1,run+1):
     countH = 2   
     
     # The big P 100x100 matrix will be constructed in tiles mode #
-    # 1 tile is like an inverted L # 
+    # Each tile is like an inverted L # 
     # It is constructed from the left to the right #
     # It gets bigger at each s #
 
@@ -300,28 +300,13 @@ for n in range(1,run+1):
             S[:,s-1] = np.dot(h,xx)
             Y[:,s-1] = y[:,n]  
 
-        ## Calculating S and Y at each 10 time steps ##
+                        
+        ## Constructing new P matrix by extracting only main submatrices (each 10th) ##
+        # At the same time, construct HPHT with 1st elements#
+        # 1st quadrant #
         tens = (M-1)+counts2
+
         if s == tens:
-            #random = np.zeros(D)
-            #xx = mod.lorenz96(xx,random,dt) 
-            #print 'xx for s=', s, 'is', xx
-
-            S[:,counts+1] = np.dot(h,xx)
-            #Y[:,counts+1] = y[:,tens+1]      
-            Y[:,counts+1] = y[:,tens]      
-
-            counts = counts + 1
-            counts2 = counts2 + 10
-
-            if s == (Obs-M)-1:
-                random = np.zeros(D)
-                xx = mod.lorenz96(xx,random,dt) 
-                ###print 'xx for s=', s, 'is', xx
-
-            ## Constructing new P matrix by extracting only main submatrices (each 10th) ##
-            # At the same time, construct HPHT with 1st elements#
-            # 1st quadrant #
             if s == (M-1):
                 i1 = str(0)+str(s)
                 i2 = str(s)+str(0)
@@ -330,10 +315,12 @@ for n in range(1,run+1):
                 newP['00'] = P['00'] 
                 HPHT_temp = newP['00']
                 HPHT[0,0] = HPHT_temp[0,0]
-
+                
                 newP[i1] = P[i1]
                 HPHT_temp = newP[i1]
                 HPHT[0,1] = HPHT_temp[0,0]
+                #print 's=', s
+                #print 'P', P['09']   
 
                 newP[i2] = P[i2]
                 HPHT_temp = newP[i2]
@@ -387,6 +374,26 @@ for n in range(1,run+1):
 
                 countH = countH + 1
 
+            if s == (Obs-M)-1:
+                random = np.zeros(D)
+                xx = mod.lorenz96(xx,random,dt) 
+                ###print 'xx for s=', s, 'is', xx
+
+            counts2 = counts2 + 10
+
+        ## Calculating S and Y at each 10 time steps ##
+        if s == tens+1:
+            #random = np.zeros(D)
+            #xx = mod.lorenz96(xx,random,dt) 
+            #print 'xx for s=', s, 'is', xx
+
+            S[:,counts+1] = np.dot(h,xx)
+            #Y[:,counts+1] = y[:,tens+1]      
+            Y[:,counts+1] = y[:,tens+1]      
+
+            counts = counts + 1
+  
+    #print 'newP09', newP['00']        
     #################### Constructing PHT matrix #################
     countPHT = 1    
     for z in range(M-1,Obs-M,10):     
@@ -410,12 +417,12 @@ for n in range(1,run+1):
     U, G, V = mod.svd(HPHT)          # considering R=0
     #print 'G', G
 
-    #if n == run:
-    if np.mod(n,10) == 0:
-        plt.figure(12).suptitle('Singular values spectrum')
-        plt.plot(G,'-') 
-        plt.yscale('log')
-        plt.hold(True)
+    
+    ##if np.mod(n,10) == 0:
+        ##plt.figure(12).suptitle('Singular values spectrum')
+        ##plt.plot(G,'-') 
+        ##plt.yscale('log')
+        ##plt.hold(True)
 
     ######## First and last 3 singular values ###########
     svmax = np.max(G) 
@@ -435,15 +442,16 @@ for n in range(1,run+1):
     toler = G/svmax
     #print 'tolerance', toler
     
-    if np.mod(n,100) == 0:
-        plt.figure(10).suptitle('Tolerance spectrum')
-        plt.plot(toler,'-') 
-        plt.yscale('log')
-        plt.hold(True)
+    ##if np.mod(n,100) == 0:
+        ##plt.figure(10).suptitle('Tolerance spectrum')
+        ##plt.plot(toler,'-') 
+        ##plt.yscale('log')
+        ##plt.hold(True)
 
     tol = np.ones(len(toler))
     for l in range(len(toler)):
         if toler[l] > 1.e-2:
+        #if toler[l] > 0.5:
             tol[l] = 1
         else:
             tol[l] = 0
@@ -561,20 +569,16 @@ for n in range(1,run+1):
 
    
     ################ Plotting Lyapunov exponent #####################
-    #plt.figure(figsize=(12, 10)).suptitle('Lyapunov Exponents')
-    #if [any(item) in lya >0 
-    plt.figure(1).suptitle('Lyapunov Exponents for D=20, M=10, r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
-    plt.axhline(y=0, xmin=0, xmax=run, linewidth=1, color = 'm')
-    ##for i in range(D):   
-    ###for i in range(D):                   # to plot all variables!!
-        ###plt.subplot(D/4,4,i+1)           # to plot all variables!!
-    for i in range(D/3):
-        plt.subplot(np.ceil(D/8.0),2,i+1)  
-        if lya[i] >0:
-            plt.plot(n+1,lya[i],'y.',linewidth=2.0,label='truth')
-            plt.yscale('log')
-            plt.ylabel('x['+str(i)+']')
-            plt.hold(True)
+    #plt.figure(1).suptitle('Lyapunov Exponents for D=20, M=10, r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
+    #plt.axhline(y=0, xmin=0, xmax=run, linewidth=1, color = 'm')
+    
+    #for i in range(D/3):
+        #plt.subplot(np.ceil(D/8.0),2,i+1)  
+        #if lya[i] >0:
+            #plt.plot(n+1,lya[i],'y.',linewidth=2.0,label='truth')
+            #plt.yscale('log')
+            #plt.ylabel('x['+str(i)+']')
+            #plt.hold(True)
             
 
     ########################## Calculating SE ############################
@@ -620,93 +624,98 @@ for n in range(1,run+1):
 
  
     ################## Plotting P matrices ##############    
-    #cmap=plt.get_cmap('RdBu')
-    #plt.figure(3).suptitle('P Matrix')
+    cmap=plt.get_cmap('RdBu')
+    #plt.figure(n*3).suptitle('newP Matrix')
     ####plt.imshow(P[:nx,:nx],cmap=cmap)
-    #if np.mod(n,1000) == 0:
-    #    for b in range(M):
-    #        for a in range(M):
-    #            c = M*b
-    #            plt.subplot(M,M,c+a+1)
-    #            idx = str(b)+str(a)
-    #            plt.imshow(P[idx],cmap=cmap)
+    if np.mod(n,50) == 0:
+        plt.figure(n*3).suptitle('newP Matrix at time'+str(n)+'')
+        for b in range(0,Obs,M):
+            wc = b/10.
+            if b > 0:
+                b = b-1 
+            for a in range(0,Obs,M):
+                uc = a/10.
+                if a > 0:
+                    a = a-1 
+                c = M*wc
+                plt.subplot(M,M,c+uc+1)
+                idx = str(b)+str(a)
+                plt.imshow(newP[idx],cmap=cmap)
                 #plt.colorbar()
-    #            plt.hold(True)
-    #            plt.xlabel('P['+str(idx)+']')
-    #            plt.hold(True)
-    #        plt.hold(True)
+                plt.hold(True)
+                idx_name = str(b+1)+str(a+1)
+                plt.xlabel('newP['+str(idx_name)+']')
+                plt.hold(True)
+            plt.hold(True)
         #plt.colorbar()   
-    #    plt.savefig('P_'+str(n)+'.png')
+        plt.savefig('newP_time'+str(n)+'.png')
     ##plt.close('all')
 #plt.show()
         
-    cmap=plt.get_cmap('RdBu')
-    plt.figure(4).suptitle('P Matrix at time 20')
-    if n == 20:
-        #for i in range(2):
-        plt.subplot(1,3,1)
-        plt.imshow(P['00'],cmap=cmap)
-        plt.xlabel('P[00]')
-        plt.colorbar()   
-        plt.subplot(1,3,2)
-        plt.imshow(P['09'],cmap=cmap)
-        plt.xlabel('P[09]')
-        plt.colorbar()   
-        plt.subplot(1,3,3)
-        plt.imshow(P['99'],cmap=cmap)
-        plt.xlabel('P[99]')
-        plt.colorbar()   
-        plt.savefig('P_n20.png')
-        #plt.show()
+    #cmap=plt.get_cmap('RdBu')
+    #plt.figure(4).suptitle('P Matrix at time 20')
+    #if n == 20:
+        
+        #plt.subplot(1,3,1)
+        #plt.imshow(P['00'],cmap=cmap)
+        #plt.xlabel('P[00]')
+        #plt.colorbar()   
+        #plt.subplot(1,3,2)
+        #plt.imshow(P['09'],cmap=cmap)
+        #plt.xlabel('P[09]')
+        #plt.colorbar()   
+        #plt.subplot(1,3,3)
+        #plt.imshow(P['99'],cmap=cmap)
+        #plt.xlabel('P[99]')
+        #plt.colorbar()   
+        #plt.savefig('P_n20.png')
+        
 
-    #if np.mod(n,10) == 0:
-    if n == run:
-        cmap=plt.get_cmap('RdBu')
-        plt.figure(5).suptitle('P Matrix at time'+str(n)+'')
-    #if np.mod(n,10) == 0:
-        #for i in range(2):
-        plt.subplot(1,3,1)
-        plt.imshow(P['00'],cmap=cmap)
-        plt.xlabel('P[00]')
-        plt.colorbar()   
-        plt.subplot(1,3,2)
-        plt.imshow(P['09'],cmap=cmap)
-        plt.xlabel('P[09]')
-        plt.colorbar()   
-        plt.subplot(1,3,3)
-        plt.imshow(P['99'],cmap=cmap)
-        plt.xlabel('P[99]')
-        plt.colorbar()   
-        plt.savefig('P_n'+str(n)+'.png')
-        #plt.show()
+    #if n == run:
+        #cmap=plt.get_cmap('RdBu')
+        #plt.figure(5).suptitle('P Matrix at time'+str(n)+'')
+
+        #plt.subplot(1,3,1)
+        #plt.imshow(P['00'],cmap=cmap)
+        #plt.xlabel('P[00]')
+        #plt.colorbar()   
+        #plt.subplot(1,3,2)
+        #plt.imshow(P['09'],cmap=cmap)
+        #plt.xlabel('P[09]')
+        #plt.colorbar()   
+        #plt.subplot(1,3,3)
+        #plt.imshow(P['99'],cmap=cmap)
+        #plt.xlabel('P[99]')
+        #plt.colorbar()   
+        #plt.savefig('P_n'+str(n)+'.png')
+        
     
-    if n == run:
-        cmap=plt.get_cmap('RdBu')
-        plt.figure(8)#.suptitle('P Matrix at time'+str(n)+'')
-        plt.imshow(P['00'],cmap=cmap)
-        plt.xlabel('P[00]')
-        plt.colorbar() 
-        plt.savefig('P_00.png')
-        #plt.show()
+    #if n == run:
+        #cmap=plt.get_cmap('RdBu')
+        #plt.figure(8)#.suptitle('P Matrix at time'+str(n)+'')
+        #plt.imshow(P['00'],cmap=cmap)
+        #plt.xlabel('P[00]')
+        #plt.colorbar() 
+        #plt.savefig('P_00.png')
+      
 
-    if n == run:
-        cmap=plt.get_cmap('RdBu')
-        plt.figure(9)#.suptitle('P Matrix at time'+str(n)+'')
-        plt.imshow(P['09'],cmap=cmap)
-        plt.xlabel('P[09]')
-        plt.colorbar() 
-        plt.savefig('P_09.png')
-        #plt.show()
+    #if n == run:
+        #cmap=plt.get_cmap('RdBu')
+        #plt.figure(9)#.suptitle('P Matrix at time'+str(n)+'')
+        #plt.imshow(P['09'],cmap=cmap)
+        #plt.xlabel('P[09]')
+        #plt.colorbar() 
+        #plt.savefig('P_09.png')
+       
 
-    if n == run:
-        cmap=plt.get_cmap('RdBu')
-        plt.figure(15)#.suptitle('P Matrix at time'+str(n)+'')
-        plt.imshow(P['99'],cmap=cmap)
-        plt.xlabel('P[99]')
-        plt.colorbar() 
-        plt.savefig('P_99.png')
-        #plt.show()
-
+    #if n == run:
+        #cmap=plt.get_cmap('RdBu')
+        #plt.figure(15)#.suptitle('P Matrix at time'+str(n)+'')
+        #plt.imshow(P['99'],cmap=cmap)
+        #plt.xlabel('P[99]')
+        #plt.colorbar() 
+        #plt.savefig('P_99.png')
+       
     #cmap=plt.get_cmap('RdBu')
     #plt.figure(6).suptitle('P - 1st row - 00-09 at time 10')
     #if n == 10:
@@ -731,11 +740,12 @@ for n in range(1,run+1):
 
 ######################## Plotting variables ###############################
 plt.figure(figsize=(12, 10)).suptitle('Variables for D='+str(D)+', M='+str(M)+', r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
-#for i in range(D/2):
-for i in range(D/3):
+for i in range(D/2):
+#for i in range(D/3):
 #for i in range(D):
-    plt.subplot(np.ceil(D/8.0),2,i+1)
-    #plt.subplot(5,2,i+1)
+    #plt.subplot(np.ceil(D/8.0),2,i+1)
+    plt.subplot(5,2,i+1)
+    #plt.subplot(5,4,i+1)
     if i == 0:  
         plt.plot(y[0,:],'r.',label='obs')   ## create y with no zeros to plot correctly ###
         plt.hold(True)      
@@ -746,6 +756,23 @@ for i in range(D/3):
     plt.hold(True)
         
     plt.ylabel('x['+str(i)+']')
+    plt.xlabel('time steps')
+
+plt.figure(figsize=(12, 10)).suptitle('Variables for D='+str(D)+', M='+str(M)+', r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
+for k in range(D/2,D):
+#for i in range(D/3):
+#for i in range(D):
+    #plt.subplot(np.ceil(D/8.0),2,i+1)
+    i2 = k - 10
+    plt.subplot(5,2,i2+1)
+    #plt.subplot(5,4,i+1)
+    
+    plt.plot(x[k,:],'g',label='X')
+    plt.hold(True)
+    plt.plot(xtrue[k,:],'b-',linewidth=2.0,label='truth')
+    plt.hold(True)
+        
+    plt.ylabel('x['+str(k)+']')
     plt.xlabel('time steps')
 plt.show()
     
