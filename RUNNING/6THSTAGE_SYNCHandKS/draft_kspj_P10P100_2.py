@@ -14,7 +14,7 @@ F=8.17        # forcing in L96 model
 
 M = 10        # dimensional time delays
 tau= 0.1      # constant time delay
-Obs = 100     # number of observations in a time delay
+Obs = int(M/tau)   # number of observations in a time delay (100 for M=10)
 #nTau = tau/dt  
  
 print 'D=', D, 'variables and M=', M ,'time-delays'
@@ -150,7 +150,7 @@ Jac_tri[it==jt+1] = 0.1
 #for i in range(D):
 #    I[i,i] = 1. 
 
-run = 500   # so this is also number of time step
+run = 100   # so this is also number of time step
 
 dlyaini = x[:,0] - xtrue[:,0]
 
@@ -177,7 +177,7 @@ for n in range(1,run+1):
 
     newP = {}    
 
-    counts = 0 
+    counts = 1 
     counts2 = 0 
     countH = 2   
     
@@ -311,25 +311,34 @@ for n in range(1,run+1):
                 i1 = str(0)+str(s)
                 i2 = str(s)+str(0)
                 i3 = str(s)+str(s)
-
+                
+                #Maybe the next 3 lines are redundant as it appears in the beginning of n-loop#
+                #Also, the 2nd and 3rd HPHT_temp have the same values (due to Jac2 calculation being transposed?)#
                 newP['00'] = P['00'] 
                 HPHT_temp = newP['00']
                 HPHT[0,0] = HPHT_temp[0,0]
+                #print '1st HPHT_temp', HPHT_temp[0,0]
+                #print 'P[09]', P['09']
+                #print 'P[90]', P['90']
                 
                 newP[i1] = P[i1]
                 HPHT_temp = newP[i1]
                 HPHT[0,1] = HPHT_temp[0,0]
                 #print 's=', s
-                #print 'P', P['09']   
-
+                #print '2nd HPHT_temp', HPHT_temp[0,0]
+                
                 newP[i2] = P[i2]
                 HPHT_temp = newP[i2]
                 HPHT[1,0] = HPHT_temp[0,0]
-
+                #print '3rd HPHT_temp', HPHT_temp[0,0]
+                
                 newP[i3] = P[i3]
                 HPHT_temp = newP[i3]
                 HPHT[1,1] = HPHT_temp[0,0]
-                
+                #print '4th HPHT_temp', HPHT_temp[0,0]
+
+                #print 'HPHT', HPHT
+
             # Other tiles #
             else:
                 # Border and diagonal main submatrices are extracted #
@@ -355,7 +364,9 @@ for n in range(1,run+1):
                 # Internal main submatrices are extracted #
                 # At the same time, construct HPHT with 1st elements#
                 countHup = countH
-                for u in range(10,Obs,M):
+                
+                #for u in range(10,Obs,M):
+                for u in range(M,Obs,M):
                     i_rowcol = s - u                
                     if i_rowcol < 0:
                         break
@@ -379,24 +390,38 @@ for n in range(1,run+1):
                 xx = mod.lorenz96(xx,random,dt) 
                 ###print 'xx for s=', s, 'is', xx
 
-            counts2 = counts2 + 10
+            #counts2 = counts2 + 10
+            counts2 = counts2 + M
 
         ## Calculating S and Y at each 10 time steps ##
-        if s == tens+1:
+        tens2 = M*counts        
+        if s == tens2:
             #random = np.zeros(D)
             #xx = mod.lorenz96(xx,random,dt) 
             #print 'xx for s=', s, 'is', xx
 
-            S[:,counts+1] = np.dot(h,xx)
+            S[:,counts] = np.dot(h,xx)
             #Y[:,counts+1] = y[:,tens+1]      
-            Y[:,counts+1] = y[:,tens+1]      
+            Y[:,counts] = y[:,tens2+(n-1)]      
 
             counts = counts + 1
-  
+
+        ###if s == tens+1:
+            #random = np.zeros(D)
+            #xx = mod.lorenz96(xx,random,dt) 
+            #print 'xx for s=', s, 'is', xx
+
+            ###S[:,counts] = np.dot(h,xx)
+            #Y[:,counts+1] = y[:,tens+1]      
+            ###Y[:,counts] = y[:,tens+1]      
+
+            ###counts = counts + 1 
+    #print 'HPHT', HPHT
     #print 'newP09', newP['00']        
     #################### Constructing PHT matrix #################
     countPHT = 1    
-    for z in range(M-1,Obs-M,10):     
+    #for z in range(M-1,Obs-M,10): 
+    for z in range(M-1,Obs-M,M):    
         icol = str(0)+str(z)          
         
         PHTcol = newP[icol]
@@ -630,11 +655,13 @@ for n in range(1,run+1):
     if np.mod(n,50) == 0:
         plt.figure(n*3).suptitle('newP Matrix at time'+str(n)+'')
         for b in range(0,Obs,M):
-            wc = b/10.
+            #wc = b/10.
+            wc = b/M
             if b > 0:
                 b = b-1 
             for a in range(0,Obs,M):
-                uc = a/10.
+                #uc = a/10.
+                uc = a/M
                 if a > 0:
                     a = a-1 
                 c = M*wc
