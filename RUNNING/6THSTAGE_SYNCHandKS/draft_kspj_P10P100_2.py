@@ -15,6 +15,7 @@ F=8.17        # forcing in L96 model
 M = 10        # dimensional time delays
 tau= 0.1      # constant time delay
 Obs = int(M/tau)   # number of observations in a time delay (100 for M=10)
+
 #nTau = tau/dt  
  
 print 'D=', D, 'variables and M=', M ,'time-delays'
@@ -45,7 +46,7 @@ K1 = 11.e0*np.diag(np.ones([D]))
 
 ######### Setting tolerance and maximum for rank calculations ########
 pinv_tol =  (np.finfo(float).eps)
-max_pinv_rank = M-8            
+max_pinv_rank = M-8           
 
 
 ################### Creating truth ###################################
@@ -150,7 +151,7 @@ Jac_tri[it==jt+1] = 0.1
 #for i in range(D):
 #    I[i,i] = 1. 
 
-run = 100   # so this is also number of time step
+run = 10   # so this is also number of time step
 
 dlyaini = x[:,0] - xtrue[:,0]
 
@@ -289,9 +290,11 @@ for n in range(1,run+1):
                 #if s == 1:
                     
                 #if m == (M-1): 
-                    
+                #print 'm=', m    
                 break
-                
+             
+        #print 'm=', m 
+
         if s == 1:
             xf = xx
             #print 'xx for 1st S', xx
@@ -304,6 +307,7 @@ for n in range(1,run+1):
         ## Constructing new P matrix by extracting only main submatrices (each 10th) ##
         # At the same time, construct HPHT with 1st elements#
         # 1st quadrant #
+        
         tens = (M-1)+counts2
 
         if s == tens:
@@ -363,18 +367,21 @@ for n in range(1,run+1):
 
                 # Internal main submatrices are extracted #
                 # At the same time, construct HPHT with 1st elements#
+                
                 countHup = countH
                 
                 #for u in range(10,Obs,M):
                 for u in range(M,Obs,M):
-                    i_rowcol = s - u                
+                    i_rowcol = s - u   
+                             
                     if i_rowcol < 0:
                         break
                     countHup = countHup - 1
                     
                     iup2 = str(i_rowcol)+str(s)
                     idown2 = str(s)+str(i_rowcol)
-
+                    #print 'iup2', iup2
+                    
                     newP[iup2] = P[iup2]
                     HPHT_temp = newP[iup2]
                     HPHT[countHup,countH] = HPHT_temp[0,0]
@@ -382,13 +389,17 @@ for n in range(1,run+1):
                     newP[idown2] = P[idown2]
                     HPHT_temp = newP[idown2]
                     HPHT[countH,countHup] = HPHT_temp[0,0]
-
+                
+                #print 'iup2', iup2
                 countH = countH + 1
 
             if s == (Obs-M)-1:
                 random = np.zeros(D)
                 xx = mod.lorenz96(xx,random,dt) 
                 ###print 'xx for s=', s, 'is', xx
+
+                S[:,M-1] = np.dot(h,xx)
+                Y[:,M-1] = y[:,(s+1)+(n-1)] 
 
             #counts2 = counts2 + 10
             counts2 = counts2 + M
@@ -652,7 +663,7 @@ for n in range(1,run+1):
     cmap=plt.get_cmap('RdBu')
     #plt.figure(n*3).suptitle('newP Matrix')
     ####plt.imshow(P[:nx,:nx],cmap=cmap)
-    if np.mod(n,50) == 0:
+    if np.mod(n,10) == 0:
         plt.figure(n*3).suptitle('newP Matrix at time'+str(n)+'')
         for b in range(0,Obs,M):
             #wc = b/10.
