@@ -15,7 +15,7 @@ F=8.17        # forcing in L96 model
 M = 10        # dimensional time delays
 tau= 0.1      # constant time delay
 Obs = int(M/tau)   # number of observations in a time delay (100 for M=10)
-
+#Obs = 50
 #nTau = tau/dt  
  
 print 'D=', D, 'variables and M=', M ,'time-delays'
@@ -46,7 +46,7 @@ K1 = 11.e0*np.diag(np.ones([D]))
 
 ######### Setting tolerance and maximum for rank calculations ########
 pinv_tol =  (np.finfo(float).eps)
-max_pinv_rank = M-8           
+max_pinv_rank = M-9           
 
 
 ################### Creating truth ###################################
@@ -151,7 +151,7 @@ Jac_tri[it==jt+1] = 0.1
 #for i in range(D):
 #    I[i,i] = 1. 
 
-run = 10   # so this is also number of time step
+run = 100   # so this is also number of time step
 
 dlyaini = x[:,0] - xtrue[:,0]
 
@@ -196,6 +196,11 @@ for n in range(1,run+1):
         
         idxs = s
         
+        ###if s == 1:
+            ## Constructing initial S and Y vectors ##
+            ###S[:,s-1] = np.dot(h,xx)
+            ###Y[:,s-1] = y[:,n-1]  
+
         ### Each m corresponds to steps to construct 1 tile ###
         for m in range(1,Obs-M):
             # Defining dictionary entries (beginning by 00) #
@@ -297,8 +302,7 @@ for n in range(1,run+1):
 
         if s == 1:
             xf = xx
-            #print 'xx for 1st S', xx
-
+            
             ## Constructing initial S and Y vectors ##
             S[:,s-1] = np.dot(h,xx)
             Y[:,s-1] = y[:,n]  
@@ -427,6 +431,9 @@ for n in range(1,run+1):
             ###Y[:,counts] = y[:,tens+1]      
 
             ###counts = counts + 1 
+    
+    #Jac0 = P['11']
+
     #print 'HPHT', HPHT
     #print 'newP09', newP['00']        
     #################### Constructing PHT matrix #################
@@ -452,8 +459,9 @@ for n in range(1,run+1):
     #### Calculating the inverse of HPHT through SVD ####
     U, G, V = mod.svd(HPHT)          # considering R=0
     #print 'G', G
+    print 'U', U
+    print 'V', V
 
-    
     ##if np.mod(n,10) == 0:
         ##plt.figure(12).suptitle('Singular values spectrum')
         ##plt.plot(G,'-') 
@@ -544,7 +552,7 @@ for n in range(1,run+1):
     #print 'g', g
     Ginv = np.zeros((M, M))
     Ginv[:rr, :rr] = np.diag(g)
-    #print 'Ginv', Ginv   
+    print 'Ginv', Ginv   
 
 
     ############# Condition number calculation ##########
@@ -554,9 +562,10 @@ for n in range(1,run+1):
 
     ############## Calculating the inverse ##############
     HPHTinv1 = np.dot((np.transpose(V[:,:])),(np.transpose(Ginv)))   
-    
+    print 'HPHTinv1', HPHTinv1
     HPHTinv = np.dot(HPHTinv1,(np.transpose(U[:,:])))  
-    
+    print 'HPHTinv', HPHTinv
+
     ##### Multiplying the whole term with (y - hx) ######
     dx1 = np.dot(PHT,HPHTinv)  
     
