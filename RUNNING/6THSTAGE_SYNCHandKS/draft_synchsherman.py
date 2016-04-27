@@ -12,17 +12,17 @@ dt = 0.01    #original value=0.01
 D = 20 
 F=8.17
 
-M = 10
+M = 12
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
 ###################### Seeding for 20 variables#######################
 
-r=18 #for x[:,0] = xtrue[:,0]
+#r=18 #for x[:,0] = xtrue[:,0]
 #r=37 #for original code 
 #r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
-#r=39   #for RK4 and 0.0005 uniform noise (for M = 12)
+r=39   #for RK4 and 0.0005 uniform noise (for M = 12)
 
 np.random.seed(r)  
 
@@ -53,7 +53,7 @@ Ks = 1.e0*np.diag(np.ones([L*M]))
 
 ######### Setting tolerance and maximum for rank calculations ########
 pinv_tol =  (np.finfo(float).eps)#*max((M,D))#apparently same results as only 2.2204e-16
-max_pinv_rank = M
+max_pinv_rank = M-10
 
 
 ################### Creating truth ###################################
@@ -126,6 +126,10 @@ y = np.zeros([L,N+1])
 y = np.dot(h,xtrue) + np.random.normal(0,0.01,N+1)  
 sigma2 = 0.0001
 
+###Std deviation: 1e-1###
+#y = np.dot(h,xtrue) + np.random.normal(0,0.1,N+1)  
+#sigma2 = 0.01
+
 ###### Noise that runs perfect until time step 1800 and 2300 (for seed=18, K=40, max_rank=7) 
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.002,N+1)-0.001
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
@@ -150,12 +154,16 @@ for i in range(D):
 
 Jac0 = np.copy(Jac)   
 
-run = 1000
+run = 3000
 
 oo = np.zeros([1,run+1])      
 svmaxvec = np.zeros([1,run+1]) 
 svmaxvec2 = np.zeros([1,run+1]) 
 
+dlyaini = x[:,1] - xtrue[:,1]
+lyacount = 0
+
+################### Main loop ##########################################
 for n in range(1,run+1):
     t = (n-1)*dt
 
@@ -245,7 +253,7 @@ for n in range(1,run+1):
     #U, G, V = mod.svd(dsdx)
     U, G, V = mod.svd(sigmaPSS)
     #print 'U', U
-    #print 'G', G                       # All positive values, for good or bad runs. 
+    print 'G', G                       # All positive values, for good or bad runs. 
     #print 'V', V
     #print 'ln(G)', np.log(G)
 
@@ -262,23 +270,47 @@ for n in range(1,run+1):
     ###difmax = svmaxvec[:,n] - svmaxvec[:,n-1]
     #print 'Difmax=', difmax
     
+    ### Plotting Singular values ##
+    if n == 2 or n == 3:
+        plt.figure(1).suptitle('Singular Values')
+        for i in range(D):                   
+            plt.plot(i,G[i],'mo') 
+            plt.yscale('log')
+            plt.hold(True)
+        #plt.show()
+
+
     difsv = svmax - svmin    
     ratioobs = svmin/svmax
     condnumber = svmax/svmin
     #print 'Condition number is', condnumber
+
+    #### Calculating the slope of condition number #####
+    if n == 2 or n == 3:
+        for z in range(D):
+            condnumbertemp = svmax/G[z]
+            plt.figure(2).suptitle('Condition Number')
+            plt.plot(z,condnumbertemp,'o') 
+            plt.yscale('log')
+            plt.hold(True)
+
+
     oo[:,n] = (ratioobs)**2
     obin = np.sum(oo)   
     #print 'observability', observ                   #no influence until now...(between e-05 and e-04)
 
     ##### Dynamic rank calculation #######
-    if condnumber > 1.e6:
+
+    #### Option 1 - According to condition number ###
+    #max_pinv_rank = M
+    ###if condnumber > 1.e6:
         #if max_pinv_rank == M:
-        max_pinv_rank = 7
+        ###max_pinv_rank = 7
         #else:
         #    max_pinv_rank = max_pinv_rank - 1
 
         #svminrank = G[max_pinv_rank-1]        
-        print 'max_pinv_rank', max_pinv_rank
+        ###print 'max_pinv_rank', max_pinv_rank
 
     ###elif condnumber > 1.e7:
         ###max_pinv_rank = 6
@@ -293,6 +325,45 @@ for n in range(1,run+1):
         #print 'max_pinv_rank', max_pinv_rank
 
     #print 'max_pinv_rank', max_pinv_rank
+
+    ### Option 2 - According to sing values slope/variation ##
+    for j in range(len(G)-1):
+    ###for j in range(len(G)-2):
+    ###for j in range(len(G)-3):
+        
+        svdiff = G[j]-G[j+1]
+        ###svdiff = G[j]-G[j+2]
+        ###svdiff = G[j]-G[j+3]
+       
+        svgrad = abs(svdiff - G[j+1])
+        ###svgrad = abs(svdiff - G[j+2])
+        ###svgrad = abs(svdiff - G[j+3])
+           
+        ###if svgrad < G[j+1]:
+        ###if svgrad < G[j+2]:
+        ###if svgrad < G[j+3]:
+            
+            ###max_pinv_rank = j
+            ###max_pinv_rank = j-1
+            ###max_pinv_rank = j+1
+            ###break
+
+    #if n == 950:
+    
+    #if lyacount > 15:
+    #    max_pinv_rank = 3
+    #elif lyacount > 13:
+    #    max_pinv_rank = 4
+    #elif lyacount > 10:
+    #    max_pinv_rank = 5
+    #elif lyacount > 7:
+    #    max_pinv_rank = 6
+    #elif lyacount > 10:
+        #max_pinv_rank = 6
+    #else:
+    #    max_pinv_rank = 7
+
+    print 'rank is', max_pinv_rank
 
     svminrank = G[max_pinv_rank-1]
 
@@ -344,6 +415,27 @@ for n in range(1,run+1):
 
     #print 'x[:,n+1] at', n+1, 'is', x[:,n+1]
 
+
+    ################ Calculating Lyapunov exponent #####################
+    dlya = x[:,n+1] - xtrue[:,n+1]
+
+    dl = abs(dlya/dlyaini)   
+
+    lya = (1/float(n))*(np.log(dl))
+
+    lyacount = 0
+    for j in range(D):
+        if lya[j] > 0:
+            lyacount = lyacount + 1
+
+    print 'Number of positive (chaotic) Lyapunov exponents:', lyacount
+
+    ## Plotting positive (chaotic) Lyapunov exponents ##
+    plt.figure(4).suptitle('Positive (chaotic) Lyapunov exponents')
+    plt.plot(n+1,lyacount,'bo') 
+    plt.hold(True)
+
+
     ##if np.mod(n+1,10) == 1:
         ##SE = np.zeros([D,n+1])
         ##for d in range(n+1):
@@ -358,26 +450,29 @@ for n in range(1,run+1):
     dd[:,0] = xtrue[:,n+1] - x[:,n+1]
     SE = np.sqrt(np.mean(np.square(dd)))            
     print 'SE for', n, 'is', SE
+
+    ## Plotting SE error and singular values parameters ##
+    plt.figure(3)
     plt.plot(n+1,SE,'b*') 
     plt.yscale('log')
     plt.hold(True)
     
-    plt.plot(n+1,svmin,'c<') 
-    plt.yscale('log')
-    plt.hold(True)
+    #plt.plot(n+1,svmin,'c<') 
+    #plt.yscale('log')
+    #plt.hold(True)
 
-    plt.plot(n+1,svminrank,'yo') 
-    plt.yscale('log')
-    plt.hold(True)
+    #plt.plot(n+1,svminrank,'yo') 
+    #plt.yscale('log')
+    #plt.hold(True)
 
-    plt.plot(n+1,svmax,'r>') 
-    plt.yscale('log')
-    plt.hold(True)
+    #plt.plot(n+1,svmax,'r>') 
+    #plt.yscale('log')
+    #plt.hold(True)
 
     #plt.plot(n+1,ratioobs,'yo') 
     #plt.hold(True)
   
-    plt.plot(n+1,condnumber,'m.') 
+    plt.plot(n+1,condnumber,'g*') 
     plt.yscale('log')
     plt.hold(True)
 
@@ -399,9 +494,14 @@ for n in range(1,run+1):
 
 plt.show()
 
+
+######### Plotting variables #####################
 plt.figure(figsize=(12, 10)).suptitle('Variables for D='+str(D)+', M='+str(M)+', r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
-for i in range(D/3):
-    plt.subplot(np.ceil(D/8.0),2,i+1)
+#for i in range(D/3):
+    #plt.subplot(np.ceil(D/8.0),2,i+1)
+for i in range(9,15):
+    i2 = i - 9
+    plt.subplot(np.ceil(D/8.0),2,i2+1)    
     if i == 0:  
         plt.plot(y[0,:],'r.',label='obs')   ## create y with no zeros to plot correctly ###
         plt.hold(True)      
