@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import model as mod
 
 #################### Initial settings ################################
-N = 10000
+N = 13000
 Obs = 100
 dt = 0.01    #original value=0.01
 fc = 12500 
@@ -379,7 +379,7 @@ plt.show()
 
 ################################ Prediction ############################################
 random = np.zeros(D)
-for w in range(run,fc):
+for w in range(run+1,fc):
     x[:,w+1] = mod.lorenz96(x[:,w],random,dt) 
 
 
