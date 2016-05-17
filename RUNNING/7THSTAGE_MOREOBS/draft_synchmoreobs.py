@@ -13,13 +13,13 @@ fc = 12500
 D = 20 
 F=8.17
 
-M = 10
+M = 3
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
-###################### Seeding for 20 variables#######################
-
+###################### Seeding for 20 variables########################
+#r = 0
 r=18 #for x[:,0] = xtrue[:,0]
 #r=37 #for original code 
 #r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
@@ -29,12 +29,14 @@ np.random.seed(r)
 
 
 #################### Constructing h (obs operator) ##################
-observed_vars = range(4)    ######MORE OBS#########
+observed_vars = range(5)    ######MORE OBS#########
 L = len(observed_vars) 
 h = np.zeros([L,D])       
-for i in range(L):
-    h[i,observed_vars[i]] = 1.0   
-#print 'h', h
+for i in range(L):          
+#    h[i,observed_vars[i]] = 1.0  ######MORE OBS######### for observing the first vars in sequence 
+#    h[i,observed_vars[i]*2] = 1.0 ######MORE OBS######### for observing vars sparsely
+    h[i,observed_vars[i]*(D/L)] = 1.0 ######MORE OBS######### for observing vars equally sparsed
+print 'h', h
 
 ################### Setting coupling matrices ########################
 K = 1.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
@@ -116,7 +118,8 @@ y = np.zeros([L,N+1])
 
 ###### Bad noise values for y (for seed=37)
 #y = np.dot(h,xtrue) + np.random.rand(N+1)-0.5
-y = np.dot(h,xtrue) + np.random.uniform(0,0.2,N+1)-0.1
+#y = np.dot(h,xtrue) + np.random.uniform(0,0.2,N+1)-0.1     #### OK for 4 obs vars!!! (r = 18)####
+y = np.dot(h,xtrue) + np.random.normal(0,0.1,N+1)           #### OK for 4 obs vars!!! (r = 18)####
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.01,N+1)-0.005
 ###(for seed=18)
@@ -248,12 +251,12 @@ for n in range(1,run+1):
         else:
             mask[k] = 0
         #print 'mask', mask
-    r = min(max_pinv_rank,sum(mask)) 
+    rr = min(max_pinv_rank,sum(mask)) 
     #print 'r is', r
-    g = G[:r]**(-1) 
+    g = G[:rr]**(-1) 
     #print 'g', g  
     Ginv = np.zeros((L*M, D))            #####MORE OBS#####
-    Ginv[:r, :r] = np.diag(g)
+    Ginv[:rr, :rr] = np.diag(g)
     #print 'Ginv', Ginv 
     ###Ginv = np.diag(Ginv)
     #print 'Ginv2', Ginv    
