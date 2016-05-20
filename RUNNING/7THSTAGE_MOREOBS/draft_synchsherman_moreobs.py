@@ -13,7 +13,7 @@ fc = 12500
 D = 20 
 F=8.17
 
-M = 3
+M = 8
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
@@ -242,7 +242,7 @@ for n in range(1,run+1):
     
 
     ### Constructing Sherman-Morrison-Woodbury format of calculating the Kalman gain to compare with synch ###
-    Pinverse = np.linalg.pinv(Jac0)*100
+    Pinverse = np.linalg.pinv(Jac0)
 
     sigmaP = np.dot(sigma2,Pinverse)
 
