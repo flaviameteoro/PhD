@@ -8,20 +8,20 @@ import model as mod
 N = 13000
 Obs = 100
 dt = 0.01    #original value=0.01
-fc = 12500 
+fc = 12500
 
 D = 20 
 F=8.17
 
-M = 3
+M = 10
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
 ###################### Seeding for 20 variables########################
 #r = 0
-r=18 #for x[:,0] = xtrue[:,0]
-#r=37 #for original code 
+#r=18 #for x[:,0] = xtrue[:,0]
+r=37 #for original code 
 #r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
 #r=39   #for RK4 and 0.0005 uniform noise (for M = 12)
 
@@ -29,7 +29,7 @@ np.random.seed(r)
 
 
 #################### Constructing h (obs operator) ##################
-observed_vars = range(5)    ######MORE OBS#########
+observed_vars = range(10)    ######MORE OBS#########
 L = len(observed_vars) 
 h = np.zeros([L,D])       
 for i in range(L):          
@@ -120,6 +120,7 @@ y = np.zeros([L,N+1])
 #y = np.dot(h,xtrue) + np.random.rand(N+1)-0.5
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.2,N+1)-0.1     #### OK for 4 obs vars!!! (r = 18)####
 y = np.dot(h,xtrue) + np.random.normal(0,0.1,N+1)           #### OK for 4 obs vars!!! (r = 18)####
+sigma2 = 0.01
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.01,N+1)-0.005
 ###(for seed=18)
@@ -211,12 +212,12 @@ for n in range(1,run+1):
             #print 'n=', n, 'xx at m', m, 'is', xx
             #print 'xx shape is', xx.shape
 
-        idxs = L*(m-1)        #attention to this (L)term, which should be (1:L) in case of more obs
+        idxs = L*(m-1)        #attention to this (L)term, which should be (1:L) in case of more obs(??)
         #print 'idxs', idxs        
         S[:,idxs:idxs+L] = np.dot(h,xx)        #####MORE OBS#####
         #print 'S at m', m, 'is', S
         #idy = n+(m-1)*nTau
-        Y[:,idxs:idxs+L] = y[0:L,n+(m-1)*nTau] #####MORE OBS#####  # y(0,...)should increase in case of more obs
+        Y[:,idxs:idxs+L] = y[0:L,n+(m-1)*nTau] #####MORE OBS#####  
         #print 'Y at m', m, 'is', Y
         dsdx[idxs:idxs+L,:] = np.dot(h,Jac)    #####MORE OBS#####
         #print 'dsdx', dsdx
@@ -382,10 +383,62 @@ plt.show()
 
 ################################ Prediction ############################################
 random = np.zeros(D)
+time_pred1 = run
+time_pred2 = run
+time_pred3 = run
+
+threshold1 = np.sqrt(sigma2)*3
+threshold2 = np.sqrt(sigma2)*4
+threshold3 = np.sqrt(sigma2)*5
+
 for w in range(run+1,fc):
     x[:,w+1] = mod.lorenz96(x[:,w],random,dt) 
 
+    dddd = np.zeros([D,1])
+    dddd[:,0] = xtrue[:,w+1] - x[:,w+1]
+    SEpred = np.sqrt(np.mean(np.square(dddd))) 
+    
+    if SEpred <= threshold3:
+        time_pred3 = w+1
+        #SE_predlim3 = SEpred
+    pred_range3 = time_pred3 - (run+1)
+    
+    if SEpred <= threshold2:
+        time_pred2 = w+1
+        #SE_predlim2 = SEpred
+    pred_range2 = time_pred2 - (run+1)
+    
+    if SEpred <= threshold1:
+        time_pred1 = w+1
+        #SE_predlim1 = SEpred
+    pred_range1 = time_pred1 - (run+1)
+              
+    #print 'SE prediction for', w+1, 'is', SEpred
+    print 'Prediction Range for threshold 1 is', pred_range1
+    print 'Prediction Range for threshold 2 is', pred_range2
+    print 'Prediction Range for threshold 3 is', pred_range3
 
+    plt.plot(w+1,SEpred,'mo') 
+    plt.plot ([run,fc],[threshold1,threshold1], 'g-', lw=2)  
+    plt.plot ([run,fc],[threshold2,threshold2], 'y-', lw=2)
+    plt.plot ([run,fc],[threshold3,threshold3], 'r-', lw=2)  
+    plt.legend(['RMSE','Threshold1 ='+str(threshold1)+'', 'Threshold2 = '+str(threshold2)+'', 'Threshold3 = '+str(threshold3)+''], loc='upper left')
+    plt.yscale('log')
+    plt.xlim((run,fc))
+    plt.title('Prediction Ranges')
+      
+    plt.hold(True)
+
+    if w == fc-1:
+        ##plt.annotate(time_pred, xy=(time_pred,SE_predlim,'bx')
+        #plt.text(fc-50,SEpred, pred_range, fontsize=12)
+        plt.text(fc-50,threshold1, pred_range1, bbox=dict(facecolor='green', alpha=0.5))
+        plt.text(fc-50,threshold2, pred_range2, bbox=dict(facecolor='yellow', alpha=0.5))
+        plt.text(fc-50,threshold3, pred_range3, bbox=dict(facecolor='red', alpha=0.5))
+        #plt.text(0.8, 0.8, pred_range,horizontalalignment='center', verticalalignment='center')
+#plt.annotate(time_pred, xy=(time_pred,SE_predlim,'bx')
+
+plt.show()
 
 ######################## Plotting variables ###############################
 plt.figure(figsize=(12, 10)).suptitle('Variables for D='+str(D)+', M='+str(M)+', r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')

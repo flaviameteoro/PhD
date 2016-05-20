@@ -13,15 +13,15 @@ fc = 12500
 D = 20 
 F=8.17
 
-M = 8
+M = 3
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
 ###################### Seeding for 20 variables#######################
 
-r=18 #for x[:,0] = xtrue[:,0]
-#r=37 #for original code 
+#r=18 #for x[:,0] = xtrue[:,0]
+r=37 #for original code 
 #r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
 #r=39   #for RK4 and 0.0005 uniform noise (for M = 12)
 
@@ -30,7 +30,7 @@ np.random.seed(r)
 
 #################### Constructing h (obs operator) ##################
 #observed_vars = range(1)    
-observed_vars = range(5)    ######MORE OBS#########
+observed_vars = range(10)    ######MORE OBS#########
 L = len(observed_vars) 
 h = np.zeros([L,D])       
 for i in range(L):
@@ -242,7 +242,7 @@ for n in range(1,run+1):
     
 
     ### Constructing Sherman-Morrison-Woodbury format of calculating the Kalman gain to compare with synch ###
-    Pinverse = np.linalg.pinv(Jac0)
+    Pinverse = np.linalg.pinv(Jac0)*100
 
     sigmaP = np.dot(sigma2,Pinverse)
 
@@ -411,8 +411,13 @@ plt.show()
 
 ################################ Prediction ############################################
 random = np.zeros(D)
-time_pred = run
-threshold = np.sqrt(sigma2)*2
+time_pred1 = run
+time_pred2 = run
+time_pred3 = run
+
+threshold1 = np.sqrt(sigma2)*3
+threshold2 = np.sqrt(sigma2)*4
+threshold3 = np.sqrt(sigma2)*5
 
 for w in range(run+1,fc):
     x[:,w+1] = mod.lorenz96(x[:,w],random,dt) 
@@ -421,35 +426,50 @@ for w in range(run+1,fc):
     dddd[:,0] = xtrue[:,w+1] - x[:,w+1]
     SEpred = np.sqrt(np.mean(np.square(dddd))) 
     
-    if SEpred <= threshold:
-        time_pred = w+1
-        SE_predlim = SEpred
-    pred_range = time_pred - run
-                  
+    if SEpred <= threshold3:
+        time_pred3 = w+1
+        #SE_predlim3 = SEpred
+    pred_range3 = time_pred3 - (run+1)
+    
+    if SEpred <= threshold2:
+        time_pred2 = w+1
+        #SE_predlim2 = SEpred
+    pred_range2 = time_pred2 - (run+1)
+    
+    if SEpred <= threshold1:
+        time_pred1 = w+1
+        #SE_predlim1 = SEpred
+    pred_range1 = time_pred1 - (run+1)
+              
     #print 'SE prediction for', w+1, 'is', SEpred
-    print 'Prediction Range is', pred_range
+    print 'Prediction Range for threshold 1 is', pred_range1
+    print 'Prediction Range for threshold 2 is', pred_range2
+    print 'Prediction Range for threshold 3 is', pred_range3
 
     plt.plot(w+1,SEpred,'mo') 
-    plt.plot ([run,fc],[threshold,threshold], 'g-', lw=2)    
+    plt.plot ([run,fc],[threshold1,threshold1], 'g-', lw=2)  
+    plt.plot ([run,fc],[threshold2,threshold2], 'y-', lw=2)
+    plt.plot ([run,fc],[threshold3,threshold3], 'r-', lw=2)  
+    plt.legend(['RMSE','Threshold1 ='+str(threshold1)+'', 'Threshold2 = '+str(threshold2)+'', 'Threshold3 = '+str(threshold3)+''], loc='upper left')
     plt.yscale('log')
     plt.xlim((run,fc))
-    
-    #plt.text(0,0, 'Sum of vales ='S  '\n' 'Total number of entries = ' N  #example
-    #     '\n' 'Avg= 'avg   '\n'   'Standard Deviation = ' sigma)
-    
+    plt.title('Prediction Ranges')
+      
     plt.hold(True)
 
     if w == fc-1:
         ##plt.annotate(time_pred, xy=(time_pred,SE_predlim,'bx')
         #plt.text(fc-50,SEpred, pred_range, fontsize=12)
-        plt.text(fc-50,SEpred, pred_range, bbox=dict(facecolor='green', alpha=0.5))
+        plt.text(fc-50,threshold1, pred_range1, bbox=dict(facecolor='green', alpha=0.5))
+        plt.text(fc-50,threshold2, pred_range2, bbox=dict(facecolor='yellow', alpha=0.5))
+        plt.text(fc-50,threshold3, pred_range3, bbox=dict(facecolor='red', alpha=0.5))
         #plt.text(0.8, 0.8, pred_range,horizontalalignment='center', verticalalignment='center')
 #plt.annotate(time_pred, xy=(time_pred,SE_predlim,'bx')
 
 plt.show()
 
 ######################## Plotting variables ###############################
-plt.figure(figsize=(12, 10)).suptitle('Variables for D='+str(D)+', M='+str(M)+', r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+', Prediction Range= '+str(pred_range)+'')
+plt.figure(figsize=(12, 10)).suptitle('Variables for D='+str(D)+', M='+str(M)+', r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')#, Prediction Range= '+str(pred_range)+'')
 for i in range(D/3):
     plt.subplot(np.ceil(D/8.0),2,i+1)
     if i == 0:  
