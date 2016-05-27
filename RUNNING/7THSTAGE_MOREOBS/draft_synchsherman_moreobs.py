@@ -3,7 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 #import functions as m
 import model as mod
-
+import time
+start_time = time.clock()
 #################### Initial settings ################################
 N = 13000
 Obs = 100
@@ -13,7 +14,7 @@ fc = 12500
 D = 20 
 F=8.17
 
-M = 8
+M = 6
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
@@ -30,7 +31,7 @@ np.random.seed(r)
 
 #################### Constructing h (obs operator) ##################
 #observed_vars = range(1)    
-observed_vars = range(10)    ######MORE OBS#########
+observed_vars = range(5)    ######MORE OBS#########
 L = len(observed_vars) 
 h = np.zeros([L,D])       
 for i in range(L):
@@ -160,7 +161,7 @@ for i in range(D):
 
 Jac0 = np.copy(Jac)   
 
-run = 9900
+run = 735
 
 oo = np.zeros([1,run+1])      
 svmaxvec = np.zeros([1,run+1]) 
@@ -243,7 +244,7 @@ for n in range(1,run+1):
 
     ### Constructing Sherman-Morrison-Woodbury format of calculating the Kalman gain to compare with synch ###
     Pinverse = np.linalg.pinv(Jac0)
-
+    #print 'Pinverse', Pinverse
     sigmaP = np.dot(sigma2,Pinverse)
 
     SS = np.dot(np.transpose(dsdx),dsdx)
@@ -368,6 +369,7 @@ for n in range(1,run+1):
     dd[:,0] = xtrue[:,n+1] - x[:,n+1]
     SE = np.sqrt(np.mean(np.square(dd)))            
     print 'SE for', n, 'is', SE
+
     plt.plot(n+1,SE,'b*') 
     plt.yscale('log')
     plt.hold(True)
@@ -409,6 +411,7 @@ for n in range(1,run+1):
 
 plt.show()
 
+print time.clock() - start_time, "seconds"
 ################################ Prediction ############################################
 random = np.zeros(D)
 time_pred1 = run
