@@ -103,14 +103,15 @@ print 'truth created'
 
 
 ################### Creating initial ensemble##########################
-initialEns = np.zeros([D,Nens])
-for i in range(len(initialEns[0,:])):
+Ens = np.zeros([D,Nens])
+for i in range(len(Ens[0,:])):
     #random = np.random.randn(N)
     force = np.random.randn(D)    
-    initialEns[:,i] = xtrue[:,0] + force
-    print 'Ensemble member', i, 'is', initialEns[:,i]
+    #initialEns[:,i] = xtrue[:,0] + force
+    Ens[:,i] = x[:,0] + force        # ensemble created from our initial x
+    print 'Ensemble member', i, 'is', Ens[:,i]
 print 'initial ensemble created'
-print initialEns
+print Ens
 
 
 ################### Creating the obs ##################################
@@ -171,8 +172,23 @@ oo = np.zeros([1,run+1])      #for observability calculation
 svmaxvec = np.zeros([1,run+1]) 
 svmaxvec2 = np.zeros([1,run+1]) 
 
+E = np.zeros([D,1])           ### ensemble mean ###
+A = np.zeros([D,Nens])        ### for the covariance matrix ###
+
 for n in range(1,run+1):
     t = (n-1)*dt
+
+    ######## Calculate the mean and covariance of the ensemble#################
+    ############ Mean ################    
+    for a in range(D):
+        E[a,:] = np.mean(Ens[a,:])
+        #print 'The ensemble mean is', E 
+        
+    ############ Covariance ########## 
+    for b in range(D):
+        for c in range(Nens):
+            A[b,c] = Ens[b,c] - E[b,:]      
+
 
     S[:,0:L] = np.dot(h,x[:,n])   #####MORE OBS####### # this 0 term should be (0:L) in case of more obs
     #print 'S', S
