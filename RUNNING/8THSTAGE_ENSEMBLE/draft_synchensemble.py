@@ -7,10 +7,10 @@ import time
 start_time = time.clock()
 
 #################### Initial settings ################################
-N = 1300
+N = 13000
 Obs = 100
 dt = 0.01    
-fc = 1250
+fc = 12500
 
 D = 20 
 F=8.17
@@ -20,7 +20,7 @@ tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
-Nens = 100      # ensemble size 
+Nens = 3      # ensemble size 
 
 
 ###################### Seeding for 20 variables########################
@@ -150,7 +150,7 @@ Jac0 = np.copy(Jac)
 SEstore = []                     #### for calculating the mean and variance of the total SEs ####
 SEvarstore = []                  #### for calculating the mean and variance of the total SEs ####
 
-run = 300
+run = 3000
 
 oo = np.zeros([1,run+1])         #for observability calculation
 svmaxvec = np.zeros([1,run+1]) 
@@ -158,6 +158,7 @@ svmaxvec2 = np.zeros([1,run+1])
 
 E = np.zeros([D])                ### ensemble mean ###
 A = np.zeros([D,Nens])           ### for the covariance matrix ###
+B = np.zeros([D,Nens])           ### for the covariance matrix ###
 C = np.zeros([D,D])              ### covariance matrix ###   
 
 
@@ -184,7 +185,13 @@ for n in range(1,run+1):
     #print 'E shape', E.shape 
     #print 'x is', x[:,n]
     #print 'x shape', x[:,n].shape
-        
+   
+    ############ For the covariance (time n) ##########  
+    for b in range(D):
+            for c in range(Nens):
+                A[b,c] = Ens[b,c] - E[b]      
+    #print 'A is', A 
+
     ########## Constructing S and Y vectors ########################
     S[:,0:L] = np.dot(h,E)        
     #print 'S', S
@@ -213,12 +220,12 @@ for n in range(1,run+1):
         #print 'The ensemble mean is', E 
         
         ############ Covariance ########## 
-        for b in range(D):
-            for c in range(Nens):
-                A[b,c] = Ens[b,c] - E[b]      
-        #print 'A is', A
+        for d in range(D):
+            for e in range(Nens):
+                B[d,e] = Ens[d,e] - E[d]      
+        #print 'B is', B
 
-        C = (np.dot(A,np.transpose(A)))/(Nens-1)
+        C = (np.dot(B,np.transpose(A)))/(Nens-1)
         #print 'C is', C
 
         Jac = C    
@@ -233,7 +240,7 @@ for n in range(1,run+1):
         #print 'Y at m', m, 'is', Y
         dsdx[idxs:idxs+L,:] = np.dot(h,Jac)    
         #print 'dsdx', dsdx
-    print 'dsdx', dsdx
+    #print 'dsdx', dsdx
 
     ##### Calculating the pseudoinverse (using SVD decomposition) #####
     #dxds = np.linalg.pinv(dsdx,rcond=pinv_tol)    
