@@ -150,7 +150,7 @@ Jac0 = np.copy(Jac)
 SEstore = []                     #### for calculating the mean and variance of the total SEs ####
 SEvarstore = []                  #### for calculating the mean and variance of the total SEs ####
 
-run = 9900
+run = 3000
 
 oo = np.zeros([1,run+1])         #for observability calculation
 svmaxvec = np.zeros([1,run+1]) 
@@ -171,12 +171,13 @@ for n in range(1,run+1):
     for i in range(len(Ens[0,:])):
         #random = np.random.randn(N)
         force = np.random.randn(D)    
+        #print force
         #force = dx0
         #initialEns[:,i] = xtrue[:,0] + force
         Ens[:,i] = x[:,n] + force        # ensemble created from our initial x
         #print 'Ensemble member', i, 'is', Ens[:,i]
     #print 'initial ensemble created'
-    #print Ens
+    #print 'Ens for time', n, 'is', Ens
 
     ############ Calculate the ensemble mean to construct S ########    
     for a in range(D):
@@ -225,7 +226,14 @@ for n in range(1,run+1):
                 B[d,e] = Ens[d,e] - E[d]      
         #print 'B is', B
 
-        C = (np.dot(B,np.transpose(A)))/(Nens-1)
+        ##C = (np.dot(B,np.transpose(A)))/(Nens-1)  ## 1st try
+
+        C1 = (np.dot(B,np.transpose(A)))
+        C2 = (np.dot(A,np.transpose(A)))
+        #print 'C2', C2
+        C2_inv = np.linalg.pinv(C2)
+
+        C = (np.dot(C1,C2_inv))/(Nens-1)
         #print 'C is', C
 
         Jac = C    
