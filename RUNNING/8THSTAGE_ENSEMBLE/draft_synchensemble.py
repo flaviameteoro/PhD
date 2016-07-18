@@ -20,7 +20,7 @@ tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
-Nens = 3      # ensemble size 
+Nens = 20      # ensemble size 
 
 
 ###################### Seeding for 20 variables########################
@@ -150,7 +150,7 @@ Jac0 = np.copy(Jac)
 SEstore = []                     #### for calculating the mean and variance of the total SEs ####
 SEvarstore = []                  #### for calculating the mean and variance of the total SEs ####
 
-run = 3000
+run = 9900
 
 oo = np.zeros([1,run+1])         #for observability calculation
 svmaxvec = np.zeros([1,run+1]) 
