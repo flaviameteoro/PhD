@@ -15,12 +15,12 @@ fc = 12500
 D = 20 
 F=8.17
 
-M = 6
+M = 4
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
-Nens = 20      # ensemble size 
+Nens = 50    # ensemble size 
 
 
 ###################### Seeding for 20 variables########################
@@ -64,6 +64,8 @@ xtrue = np.zeros([D,N+1])
 ####### Start by spinning model in ###########
 xtest = np.zeros([D,1001]) 
 xtest[:,0]=np.random.rand(D)
+#print '1st rand', xtest[:,0]
+
 for j in range(1000):
     force = np.zeros(D)
     xtest[:,j+1]=mod.lorenz96(xtest[:,j],force,dt)
@@ -76,7 +78,8 @@ print 'xtrue[:,0]', xtrue[:,0]
 #plt.plot(xtrue[:,0],'g-')
 #plt.show()
 
-dx0 = np.random.rand(D)-0.5     
+dx0 = np.random.rand(D)-0.5  
+#print 'dx0', dx0   
 ##dx0 = np.random.rand(D)
 
 x = np.zeros([D,N+1])      
@@ -170,9 +173,13 @@ for n in range(1,run+1):
     Ens = np.zeros([D,Nens])
     for i in range(len(Ens[0,:])):
         #random = np.random.randn(N)
-        force = np.random.randn(D)    
-        #print force
+
+        ##force = np.random.rand(D) 
+        ##force = np.random.rand(D)-0.5    ## IT SYNCHRONISES WITH THESE UNIF PERTURBATIONS!
+        force = 0.1*np.random.randn(D) + 0 ## IT SYNCHRONISES WITH THESE NORMAL PERTURBATIONS!
+        #print 'force', force
         #force = dx0
+
         #initialEns[:,i] = xtrue[:,0] + force
         Ens[:,i] = x[:,n] + force        # ensemble created from our initial x
         #print 'Ensemble member', i, 'is', Ens[:,i]
@@ -189,9 +196,11 @@ for n in range(1,run+1):
    
     ############ For the covariance (time n) ##########  
     for b in range(D):
-            for c in range(Nens):
-                A[b,c] = Ens[b,c] - E[b]      
-    #print 'A is', A 
+        for c in range(Nens):
+            A[b,c] = Ens[b,c] - E[b]  
+    #print 'A is', A.shape
+    #Acovar = (np.dot(A,np.transpose(A)))/(Nens-1)    
+    #print 'A covar is', Acovar 
 
     ########## Constructing S and Y vectors ########################
     S[:,0:L] = np.dot(h,E)        
@@ -224,16 +233,31 @@ for n in range(1,run+1):
         for d in range(D):
             for e in range(Nens):
                 B[d,e] = Ens[d,e] - E[d]      
-        #print 'B is', B
+        #print 'B is', B.shape
 
-        ##C = (np.dot(B,np.transpose(A)))/(Nens-1)  ## 1st try
 
-        C1 = (np.dot(B,np.transpose(A)))
+        #C = (np.dot(B,np.transpose(A)))/(Nens-1)   ## 1st try
+
+        ##A_inv = np.linalg.pinv(A)                   ## 3rd try
+        ##C = (np.dot(B,A_inv))/(Nens-1)  
+        
+        ###C = (np.dot(B,A_inv))                       ## 5th try  
+
+        C1 = (np.dot(B,np.transpose(A)))         ## 2nd try
         C2 = (np.dot(A,np.transpose(A)))
-        #print 'C2', C2
-        C2_inv = np.linalg.pinv(C2)
+        #print '1st C2', C2
 
-        C = (np.dot(C1,C2_inv))/(Nens-1)
+        # Assuming covariances are zero (only variances considered), due to inversion ###
+        ####*for f in range(D):
+        ####*    for g in range(D):
+        ####*        if f != g:
+        ####*            C2[f,g] = 0  
+        #print 'C2', C2.shape
+        
+        C2_inv = np.linalg.pinv(C2)
+        ####C = (np.dot(C1,C2_inv))/(Nens-1)
+        
+        C = (np.dot(C1,C2_inv))                 ## 4th try
         #print 'C is', C
 
         Jac = C    
