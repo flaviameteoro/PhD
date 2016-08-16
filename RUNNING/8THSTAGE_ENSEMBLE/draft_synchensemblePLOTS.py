@@ -21,125 +21,126 @@ tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
-Nens = 10    # ensemble size 
-
-
-###################### Seeding for 20 variables########################
-#r = 5
-#r=18 #for x[:,0] = xtrue[:,0]
-r=37 #for original code 
-#r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
-#r=39   #for RK4 and 0.0005 uniform noise (for M = 12)
-
-np.random.seed(r)  
-
-
-#################### Constructing h (obs operator) ##################
-observed_vars = range(4)    
-L = len(observed_vars) 
-h = np.zeros([L,D])       
-for i in range(L):          
-#    h[i,observed_vars[i]] = 1.0      ## for observing the first vars in sequence 
-#    h[i,observed_vars[i]*2] = 1.0    ## for observing vars sparsely
-    h[i,observed_vars[i]*(D/L)] = 1.0 ## for observing vars equally sparsed
-print 'h', h
-
-
-################### Setting coupling matrices ########################
-K = 1.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
-#print 'K', K
-
-Ks = 1.e0*np.diag(np.ones([L*M]))  
-
-
-######### Setting tolerance and maximum for rank calculations ########
-pinv_tol =  (np.finfo(float).eps)
-max_pinv_rank = M
-
-
-################### Creating truth ###################################
-xtrue = np.zeros([D,N+1])
-#***xtrue[:,0] = np.random.rand(D)  
-#print 'xtrue[:,0]', xtrue[:,0]
-
-####### Start by spinning model in ###########
-xtest = np.zeros([D,1001]) 
-xtest[:,0]=np.random.rand(D)
-#print '1st rand', xtest[:,0]
-
-for j in range(1000):
-    force = np.zeros(D)
-    xtest[:,j+1]=mod.lorenz96(xtest[:,j],force,dt)
-         
-xtrue[:,0] = xtest[:,1000]
-print 'xtrue[:,0]', xtrue[:,0]
-
-## Plot xtrue to understand initial conditions influences ##
-#plt.figure(1).suptitle('xtrue for seed='+str(r)+'')
-#plt.plot(xtrue[:,0],'g-')
-#plt.show()
-
-dx0 = np.random.rand(D)-0.5  
-#print 'dx0', dx0   
-##dx0 = np.random.rand(D)
-
-x = np.zeros([D,N+1])      
-x[:,0] = xtrue[:,0] + dx0
-#x[:,0] = xtrue[:,0]
-print 'x[:,0]', x[:,0]
-
-
-nTD = N + (M-1)*nTau
-#t = np.zeros([1,nTD])
-datat = np.dot(dt,list(xrange(N+1)))
-for j in range(N):      # try nTD
-    force = np.zeros(D)  
-    #force = np.random.rand(D)-0.5  
-    xtrue[:,j+1] = mod.lorenz96(xtrue[:,j],force,dt)  
-xtrue[:,1] = xtrue[:,0] 
-x[:,1] = x[:,0]         
-print 'truth created'
-
-
-################### Creating the obs ##################################
-y = np.zeros([L,N+1]) 
-###### No noise for y (with SPINUP, ok for seeds = 37,18,44 - rank M=10 and ok for r= 39 - rank 8!!)
-#y = np.dot(h,xtrue) 
-
-###### Good noise values for y (for seed=37)
-#y = np.dot(h,xtrue) + np.random.uniform(0,1.2680e-04,N+1)-6.34e-05
-#y = np.dot(h,xtrue) + np.random.uniform(0,1.2680e-04,N+1)-9.34e-05  #(out of zero mean!)
-#y = np.dot(h,xtrue) + np.random.uniform(0,1.8680e-04,N+1)-9.34e-05
-
-###### Noise that runs totally ok for seeds=37 and 44 (rank=9) (after SPINUP-1000) (until 1500 for seed=37 before)  
-###### Runs totally ok for seed=18, with SPINUP-1000!!!!!!!!!!!!!!!!!!!
-###### Runs until 8500 for seed=39 (rank=8)
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.001,N+1)-0.0005
-#y = np.dot(h,xtrue) + np.random.normal(0,0.0005,N+1)     
-
-###### Bad noise values for y (for seed=37)
-#y = np.dot(h,xtrue) + np.random.rand(N+1)-0.5
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.2,N+1)-0.1     #### OK for 4 obs vars!!! (r = 18)####
-y = np.dot(h,xtrue) + np.random.normal(0,0.1,N+1)           #### OK for 4 obs vars!!! (r = 18)####
-sigma2 = 0.01
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.01,N+1)-0.005
-###(for seed=18)
-#y = np.dot(h,xtrue) + np.random.normal(0,0.01,N+1)  
-
-###### Noise that runs perfect until time step 1800 and 2300 (for seed=18, K=40, max_rank=7) 
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.002,N+1)-0.001
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
-#y = np.dot(h,xtrue) + np.random.normal(0,0.001,N+1)  
-
-#print 'y', y
-#print 'xtrue', xtrue
+Nens = 50    # ensemble size 
 
 ############# To plot different time-delays in the same graph ##################
 for w in range(3,6):
     M = w
     print 'M', M
     #print 'x[:,1]', x[:,1]
+
+
+    ###################### Seeding for 20 variables########################
+    #r = 5
+    #r=18 #for x[:,0] = xtrue[:,0]
+    r=37 #for original code 
+    #r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
+    #r=39   #for RK4 and 0.0005 uniform noise (for M = 12)
+
+    np.random.seed(r)  
+
+
+    #################### Constructing h (obs operator) ##################
+    observed_vars = range(5)    
+    L = len(observed_vars) 
+    h = np.zeros([L,D])       
+    for i in range(L):          
+    #    h[i,observed_vars[i]] = 1.0      ## for observing the first vars in sequence 
+    #    h[i,observed_vars[i]*2] = 1.0    ## for observing vars sparsely
+        h[i,observed_vars[i]*(D/L)] = 1.0 ## for observing vars equally sparsed
+    print 'h', h
+
+
+    ################### Setting coupling matrices ########################
+    K = 1.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
+    #print 'K', K
+
+    Ks = 1.e0*np.diag(np.ones([L*M]))  
+
+
+    ######### Setting tolerance and maximum for rank calculations ########
+    pinv_tol =  (np.finfo(float).eps)
+    max_pinv_rank = M
+
+
+    ################### Creating truth ###################################
+    xtrue = np.zeros([D,N+1])
+    #***xtrue[:,0] = np.random.rand(D)  
+    #print 'xtrue[:,0]', xtrue[:,0]
+
+    ####### Start by spinning model in ###########
+    xtest = np.zeros([D,1001]) 
+    xtest[:,0]=np.random.rand(D)
+    #print '1st rand', xtest[:,0]
+
+    for j in range(1000):
+        force = np.zeros(D)
+        xtest[:,j+1]=mod.lorenz96(xtest[:,j],force,dt)
+             
+    xtrue[:,0] = xtest[:,1000]
+    print 'xtrue[:,0]', xtrue[:,0]
+
+    ## Plot xtrue to understand initial conditions influences ##
+    #plt.figure(1).suptitle('xtrue for seed='+str(r)+'')
+    #plt.plot(xtrue[:,0],'g-')
+    #plt.show()
+
+    dx0 = np.random.rand(D)-0.5  
+    #print 'dx0', dx0   
+    ##dx0 = np.random.rand(D)
+
+    x = np.zeros([D,N+1])      
+    x[:,0] = xtrue[:,0] + dx0
+    #x[:,0] = xtrue[:,0]
+    print 'x[:,0]', x[:,0]
+
+
+    nTD = N + (M-1)*nTau
+    #t = np.zeros([1,nTD])
+    datat = np.dot(dt,list(xrange(N+1)))
+    for j in range(N):      # try nTD
+        force = np.zeros(D)  
+        #force = np.random.rand(D)-0.5  
+        xtrue[:,j+1] = mod.lorenz96(xtrue[:,j],force,dt)  
+    xtrue[:,1] = xtrue[:,0] 
+    x[:,1] = x[:,0]         
+    print 'truth created'
+
+
+    ################### Creating the obs ##################################
+    y = np.zeros([L,N+1]) 
+    ###### No noise for y (with SPINUP, ok for seeds = 37,18,44 - rank M=10 and ok for r= 39 - rank 8!!)
+    #y = np.dot(h,xtrue) 
+
+    ###### Good noise values for y (for seed=37)
+    #y = np.dot(h,xtrue) + np.random.uniform(0,1.2680e-04,N+1)-6.34e-05
+    #y = np.dot(h,xtrue) + np.random.uniform(0,1.2680e-04,N+1)-9.34e-05  #(out of zero mean!)
+    #y = np.dot(h,xtrue) + np.random.uniform(0,1.8680e-04,N+1)-9.34e-05
+
+    ###### Noise that runs totally ok for seeds=37 and 44 (rank=9) (after SPINUP-1000) (until 1500 for seed=37 before)  
+    ###### Runs totally ok for seed=18, with SPINUP-1000!!!!!!!!!!!!!!!!!!!
+    ###### Runs until 8500 for seed=39 (rank=8)
+    #y = np.dot(h,xtrue) + np.random.uniform(0,0.001,N+1)-0.0005
+    #y = np.dot(h,xtrue) + np.random.normal(0,0.0005,N+1)     
+
+    ###### Bad noise values for y (for seed=37)
+    #y = np.dot(h,xtrue) + np.random.rand(N+1)-0.5
+    #y = np.dot(h,xtrue) + np.random.uniform(0,0.2,N+1)-0.1     #### OK for 4 obs vars!!! (r = 18)####
+    y = np.dot(h,xtrue) + np.random.normal(0,0.1,N+1)           #### OK for 4 obs vars!!! (r = 18)####
+    sigma2 = 0.01
+    #y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
+    #y = np.dot(h,xtrue) + np.random.uniform(0,0.01,N+1)-0.005
+    ###(for seed=18)
+    #y = np.dot(h,xtrue) + np.random.normal(0,0.01,N+1)  
+
+    ###### Noise that runs perfect until time step 1800 and 2300 (for seed=18, K=40, max_rank=7) 
+    #y = np.dot(h,xtrue) + np.random.uniform(0,0.002,N+1)-0.001
+    #y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
+    #y = np.dot(h,xtrue) + np.random.normal(0,0.001,N+1)  
+
+    #print 'y', y
+    #print 'xtrue', xtrue
+
 
     ############ Defining vectors and matrices ####################
     Ks = 1.e0*np.diag(np.ones([L*M]))  
@@ -161,7 +162,7 @@ for w in range(3,6):
     SEstore = []                     #### for calculating the mean and variance of the total SEs ####
     SEvarstore = []                  #### for calculating the mean and variance of the total SEs ####
 
-    run = 1000
+    run = 500
 
     oo = np.zeros([1,run+1])         #for observability calculation
     svmaxvec = np.zeros([1,run+1]) 
@@ -370,16 +371,74 @@ for w in range(3,6):
         #plt.plot(n+1,SE, '*', color=c) 
         #plt.yscale('log')            
 
-        color = ['r', 'y', 'g']
+        color = ['r', 'y', 'b']
         if M == 3:
             cc = color[0]
+            label1=M
+            plt.plot(n+1,SE,''+str(cc)+'+',label='$D_E$='+str(M)+'') 
+            l1, = plt.plot(n+1,SE,''+str(cc)+'+',label='$D_E$='+str(M)+'') 
+            plt.yscale('log')
+
+            #plt.plot(n+1,SE,''+str(cc)+'.',label='label1') 
+            #line1 = plt.plot(n+1,SE,''+str(cc)+'.') 
+            #plt.yscale('log')
+            #first_legend = plt.legend(handles=[line1], loc=1)
+            #plt.legend(['label'],loc='upper left')
+            #plt.legend(['$D_E$='+str(M)+''],loc='upper left')
+            #plt.hold(True)
+            
+            #fig = plt.figure()
+            #ax = fig.add_subplot(1, 1, 1)
+            #ax.plot(n+1,SE,''+str(cc)+'.',label='label1') 
+            #ax.set_yscale('log')
         elif M == 4:
             cc = color[1]
+            label2=M
+            plt.plot(n+1,SE,''+str(cc)+'.',label='$D_E$='+str(M)+'') 
+            l2, = plt.plot(n+1,SE,''+str(cc)+'.',label='$D_E$='+str(M)+'') 
+            plt.yscale('log')
+
+            #plt.plot(n+1,SE,''+str(cc)+'.',label='label2') #
+            #ax2 = plt.figure()
+            #line2, = ax2.plot(n+1,SE,label='D_E='+str(M)+'') 
+            #line2, = plt.plot(n+1,SE,''+str(cc)+'.') 
+            #plt.yscale('log')
+            #second_legend = plt.legend(handles=[line2], loc=2)
+            #plt.legend(['label'],loc='upper left')
+            #plt.legend(['$D_E$='+str(M)+''],loc='upper left')
+            #plt.hold(True)
+
         else:
             cc = color[2]
+            label3=M
+            plt.plot(n+1,SE,''+str(cc)+'x',label='$D_E$='+str(M)+'') 
+            l3, = plt.plot(n+1,SE,''+str(cc)+'x',label='$D_E$='+str(M)+'') 
+            plt.yscale('log')
+
+            #plt.plot(n+1,SE,''+str(cc)+'.',label='label3') 
+            #line3, = plt.plot(n+1,SE,''+str(cc)+'.',label='D_E='+str(M)+'') 
+            #line3, = plt.plot(n+1,SE,''+str(cc)+'.') 
+            #plt.yscale('log')
+            #plt.legend(handles=[line3], loc=4)
+            #plt.legend(['label'],loc='upper left')
+            #plt.legend(['$D_E$='+str(M)+''],loc='upper left')
+            #plt.hold(True)
+
         #plt.plot(n+1,SE,'b*') 
-        plt.plot(n+1,SE,''+str(cc)+'*') 
-        plt.yscale('log')
+        ##plt.plot(n+1,SE,''+str(cc)+'.')#,label='D_E='+str(M)+'') 
+        ##plt.yscale('log')
+
+        #plt.legend(['$D_E$='+str(M)+''],loc='upper left')
+        ##plt.legend(loc='upper left')
+        ###plt.legend(['$D_E$=3', '$D_E$=4', '$D_E$=5'],loc='upper left')
+        ####plt.legend()
+        
+               
+        #plt.hold(True)
+
+        #ax = plt.gca().add_artist(first_legend)
+        #ax = plt.gca().add_artist(second_legend)
+     
 
         for tick in ax.xaxis.get_ticklabels():
             tick.set_fontsize('large')
@@ -394,34 +453,38 @@ for w in range(3,6):
         plt.hold(True)
         
         ####### Storing SEs after the 1st minimum to take the mean and variance ############
-        if n > 250:
-            SEstore.append(SE)
+        #if n > 250:
+        #    SEstore.append(SE)
        
-            SEmean = np.mean(SEstore)
+        #    SEmean = np.mean(SEstore)
                 
-            SEvareach = (SE-SEmean)**2
-            SEvarstore.append(SEvareach)
+        #    SEvareach = (SE-SEmean)**2
+        #    SEvarstore.append(SEvareach)
 
-            SEvar = np.mean((SE-SEmean)**2)
+        #    SEvar = np.mean((SE-SEmean)**2)
           
-            #if n > 251:
-            plt.figure(5)
-            plt.plot(n+1,SEmean,'bo')
-            #plt.yscale('log')
-            plt.hold(True)
+        #    #if n > 251:
+        #    plt.figure(5)
+        #    plt.plot(n+1,SEmean,'bo')
+        #    #plt.yscale('log')
+        #    plt.hold(True)
                 
-            plt.figure(6)
-            plt.plot(n+1,SEvar,'rx')
-            #plt.yscale('log')
-            plt.hold(True)
-            #print 'SEvar', SEvar
+        #    plt.figure(6)
+        #    plt.plot(n+1,SEvar,'rx')
+        #    #plt.yscale('log')
+        #    plt.hold(True)
+        #    #print 'SEvar', SEvar
 
-    SEmeantot = np.mean(SEstore)
-    SEvartot = np.mean(SEvarstore)
+    #SEmeantot = np.mean(SEstore)
+    #SEvartot = np.mean(SEvarstore)
 
-    print 'SEmeantot=', SEmeantot
-    print 'SEvartot=', SEvartot
+    #print 'SEmeantot=', SEmeantot
+    #print 'SEvartot=', SEvartot
 
+#plt.legend()
+#plt.legend([label1,label2,label3],loc='best')
+
+plt.legend((l1, l2, l3),(l1.get_label(),l2.get_label(),l3.get_label()), loc='best')
 plt.show()
 
 print time.clock() - start_time, "seconds"
