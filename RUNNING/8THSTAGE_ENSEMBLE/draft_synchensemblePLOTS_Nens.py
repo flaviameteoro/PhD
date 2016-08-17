@@ -16,7 +16,7 @@ fc = 12500
 D = 20 
 F=8.17
 
-M = 3
+M = 5
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
@@ -24,10 +24,11 @@ print 'D=', D, 'variables and M=', M ,'time-delays'
 Nens = 50    # ensemble size 
 
 ############# To plot different time-delays in the same graph ##################
-for w in range(3,6):
-    M = w
-    print 'M', M
-    #print 'x[:,1]', x[:,1]
+#Nens_list = [10,50,100,200]
+Nens_list = [10,50,100]
+for w in Nens_list:
+    Nens = w
+    print 'Nens', Nens
 
 
     ###################### Seeding for 20 variables########################
@@ -358,87 +359,39 @@ for w in range(3,6):
         fig = plt.figure(1)
         ax = fig.add_subplot(1, 1, 1) # create an axes object in the figure
         
-        #color = mat.cm.rainbow(np.linspace(0, 1, 3))
-        #print 'color', color
-        #fig, ax = plt.subplots()
-        
-        #for color, y in zip(colors, y_mat):
-        #plt.plot(n+1,SE, color=color) 
-    
-        #color=iter(mat.cm.rainbow(np.linspace(0,0.9,10)))
-        #c=next(color)
-        #print 'c', c
-        #plt.plot(n+1,SE, '*', color=c) 
-        #plt.yscale('log')            
+        color = ['r', 'b', 'g', 'y']
 
-        color = ['r', 'y', 'b']
-        if M == 3:
+        if Nens == Nens_list[0]:
             cc = color[0]
-            label1=M
-            plt.plot(n+1,SE,''+str(cc)+'+',label='$D_E$='+str(M)+'') 
-            l1, = plt.plot(n+1,SE,''+str(cc)+'+',label='$D_E$='+str(M)+'') 
+ 
+            plt.plot(n+1,SE,''+str(cc)+'+',label='Nens='+str(Nens)+'') 
+            l1, = plt.plot(n+1,SE,''+str(cc)+'+',label='Nens='+str(Nens)+'') 
             plt.yscale('log')
 
-            #plt.plot(n+1,SE,''+str(cc)+'.',label='label1') 
-            #line1 = plt.plot(n+1,SE,''+str(cc)+'.') 
-            #plt.yscale('log')
-            #first_legend = plt.legend(handles=[line1], loc=1)
-            #plt.legend(['label'],loc='upper left')
-            #plt.legend(['$D_E$='+str(M)+''],loc='upper left')
-            #plt.hold(True)
-            
-            #fig = plt.figure()
-            #ax = fig.add_subplot(1, 1, 1)
-            #ax.plot(n+1,SE,''+str(cc)+'.',label='label1') 
-            #ax.set_yscale('log')
-        elif M == 4:
+
+        elif Nens == Nens_list[1]:
             cc = color[1]
-            label2=M
-            plt.plot(n+1,SE,''+str(cc)+'.',label='$D_E$='+str(M)+'') 
-            l2, = plt.plot(n+1,SE,''+str(cc)+'.',label='$D_E$='+str(M)+'') 
+ 
+            plt.plot(n+1,SE,''+str(cc)+'o',label='Nens='+str(Nens)+'') 
+            l2, = plt.plot(n+1,SE,''+str(cc)+'o',label='Nens='+str(Nens)+'') 
             plt.yscale('log')
 
-            #plt.plot(n+1,SE,''+str(cc)+'.',label='label2') #
-            #ax2 = plt.figure()
-            #line2, = ax2.plot(n+1,SE,label='D_E='+str(M)+'') 
-            #line2, = plt.plot(n+1,SE,''+str(cc)+'.') 
-            #plt.yscale('log')
-            #second_legend = plt.legend(handles=[line2], loc=2)
-            #plt.legend(['label'],loc='upper left')
-            #plt.legend(['$D_E$='+str(M)+''],loc='upper left')
-            #plt.hold(True)
+
+        elif Nens == Nens_list[2]:
+            cc = color[2]
+
+            plt.plot(n+1,SE,''+str(cc)+'x',label='Nens='+str(Nens)+'') 
+            l3, = plt.plot(n+1,SE,''+str(cc)+'x',label='Nens='+str(Nens)+'') 
+            plt.yscale('log')
+
 
         else:
-            cc = color[2]
-            label3=M
-            plt.plot(n+1,SE,''+str(cc)+'x',label='$D_E$='+str(M)+'') 
-            l3, = plt.plot(n+1,SE,''+str(cc)+'x',label='$D_E$='+str(M)+'') 
+            cc = color[3]
+
+            plt.plot(n+1,SE,''+str(cc)+'.',label='Nens='+str(Nens)+'') 
+            l4, = plt.plot(n+1,SE,''+str(cc)+'.',label='Nens='+str(Nens)+'') 
             plt.yscale('log')
 
-            #plt.plot(n+1,SE,''+str(cc)+'.',label='label3') 
-            #line3, = plt.plot(n+1,SE,''+str(cc)+'.',label='D_E='+str(M)+'') 
-            #line3, = plt.plot(n+1,SE,''+str(cc)+'.') 
-            #plt.yscale('log')
-            #plt.legend(handles=[line3], loc=4)
-            #plt.legend(['label'],loc='upper left')
-            #plt.legend(['$D_E$='+str(M)+''],loc='upper left')
-            #plt.hold(True)
-
-        #plt.plot(n+1,SE,'b*') 
-        ##plt.plot(n+1,SE,''+str(cc)+'.')#,label='D_E='+str(M)+'') 
-        ##plt.yscale('log')
-
-        #plt.legend(['$D_E$='+str(M)+''],loc='upper left')
-        ##plt.legend(loc='upper left')
-        ###plt.legend(['$D_E$=3', '$D_E$=4', '$D_E$=5'],loc='upper left')
-        ####plt.legend()
-        
-               
-        #plt.hold(True)
-
-        #ax = plt.gca().add_artist(first_legend)
-        #ax = plt.gca().add_artist(second_legend)
-     
         plt.title('RMSE')
         plt.xlabel('Time units')        
         plt.ylabel('RMSE(t)')
@@ -487,6 +440,7 @@ for w in range(3,6):
 #plt.legend()
 #plt.legend([label1,label2,label3],loc='best')
 
+#plt.legend((l1, l2, l3, l4),(l1.get_label(),l2.get_label(),l3.get_label(),l4.get_label()), loc='best')
 plt.legend((l1, l2, l3),(l1.get_label(),l2.get_label(),l3.get_label()), loc='best')
 plt.show()
 

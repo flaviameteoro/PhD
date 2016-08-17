@@ -353,130 +353,120 @@ for w in range(3,6):
         dd[:,0] = xtrue[:,n+1] - x[:,n+1]
         SE = np.sqrt(np.mean(np.square(dd)))            
         print 'SE for', n, 'is', SE
-        
+
+                
         ####### Plotting the synchronisation error (RMSE) #######
-        fig = plt.figure(1)
-        ax = fig.add_subplot(1, 1, 1) # create an axes object in the figure
+        ##fig = plt.figure(1)
+        ##ax = fig.add_subplot(1, 1, 1) # create an axes object in the figure
         
-        #color = mat.cm.rainbow(np.linspace(0, 1, 3))
-        #print 'color', color
-        #fig, ax = plt.subplots()
-        
-        #for color, y in zip(colors, y_mat):
-        #plt.plot(n+1,SE, color=color) 
-    
-        #color=iter(mat.cm.rainbow(np.linspace(0,0.9,10)))
-        #c=next(color)
-        #print 'c', c
-        #plt.plot(n+1,SE, '*', color=c) 
-        #plt.yscale('log')            
+        color = ['r', 'y', 'm']
+        ##if M == 3:
+            ##cc = color[0]
+            #label1=M
+            ##plt.plot(n+1,SE,''+str(cc)+'+',label='$D_E$='+str(M)+'') 
+            ##l1, = plt.plot(n+1,SE,''+str(cc)+'+',label='$D_E$='+str(M)+'') 
+            ##plt.yscale('log')
 
-        color = ['r', 'y', 'b']
-        if M == 3:
-            cc = color[0]
-            label1=M
-            plt.plot(n+1,SE,''+str(cc)+'+',label='$D_E$='+str(M)+'') 
-            l1, = plt.plot(n+1,SE,''+str(cc)+'+',label='$D_E$='+str(M)+'') 
-            plt.yscale('log')
 
-            #plt.plot(n+1,SE,''+str(cc)+'.',label='label1') 
-            #line1 = plt.plot(n+1,SE,''+str(cc)+'.') 
-            #plt.yscale('log')
-            #first_legend = plt.legend(handles=[line1], loc=1)
-            #plt.legend(['label'],loc='upper left')
-            #plt.legend(['$D_E$='+str(M)+''],loc='upper left')
-            #plt.hold(True)
-            
-            #fig = plt.figure()
-            #ax = fig.add_subplot(1, 1, 1)
-            #ax.plot(n+1,SE,''+str(cc)+'.',label='label1') 
-            #ax.set_yscale('log')
-        elif M == 4:
-            cc = color[1]
-            label2=M
-            plt.plot(n+1,SE,''+str(cc)+'.',label='$D_E$='+str(M)+'') 
-            l2, = plt.plot(n+1,SE,''+str(cc)+'.',label='$D_E$='+str(M)+'') 
-            plt.yscale('log')
+        ##elif M == 4:
+            ##cc = color[1]
+            #label2=M
+            ##plt.plot(n+1,SE,''+str(cc)+'.',label='$D_E$='+str(M)+'') 
+            ##l2, = plt.plot(n+1,SE,''+str(cc)+'.',label='$D_E$='+str(M)+'') 
+            ##plt.yscale('log')
 
-            #plt.plot(n+1,SE,''+str(cc)+'.',label='label2') #
-            #ax2 = plt.figure()
-            #line2, = ax2.plot(n+1,SE,label='D_E='+str(M)+'') 
-            #line2, = plt.plot(n+1,SE,''+str(cc)+'.') 
-            #plt.yscale('log')
-            #second_legend = plt.legend(handles=[line2], loc=2)
-            #plt.legend(['label'],loc='upper left')
-            #plt.legend(['$D_E$='+str(M)+''],loc='upper left')
-            #plt.hold(True)
 
-        else:
-            cc = color[2]
-            label3=M
-            plt.plot(n+1,SE,''+str(cc)+'x',label='$D_E$='+str(M)+'') 
-            l3, = plt.plot(n+1,SE,''+str(cc)+'x',label='$D_E$='+str(M)+'') 
-            plt.yscale('log')
+        ##else:
+            ##cc = color[2]
+            #label3=M
+            ##plt.plot(n+1,SE,''+str(cc)+'x',label='$D_E$='+str(M)+'') 
+            ##l3, = plt.plot(n+1,SE,''+str(cc)+'x',label='$D_E$='+str(M)+'') 
+            ##plt.yscale('log')
 
-            #plt.plot(n+1,SE,''+str(cc)+'.',label='label3') 
-            #line3, = plt.plot(n+1,SE,''+str(cc)+'.',label='D_E='+str(M)+'') 
-            #line3, = plt.plot(n+1,SE,''+str(cc)+'.') 
-            #plt.yscale('log')
-            #plt.legend(handles=[line3], loc=4)
-            #plt.legend(['label'],loc='upper left')
-            #plt.legend(['$D_E$='+str(M)+''],loc='upper left')
-            #plt.hold(True)
+        ##plt.title('RMSE')
+        ##plt.xlabel('Time units')        
+        ##plt.ylabel('RMSE(t)')
 
-        #plt.plot(n+1,SE,'b*') 
-        ##plt.plot(n+1,SE,''+str(cc)+'.')#,label='D_E='+str(M)+'') 
-        ##plt.yscale('log')
+        ##for tick in ax.xaxis.get_ticklabels():
+            ##tick.set_fontsize('large')
+            ##tick.set_weight('bold')
+        ##for tick in ax.yaxis.get_ticklabels():
+            ##tick.set_fontsize('large')
+            ##tick.set_weight('bold')
+        ##plt.hold(True)
 
-        #plt.legend(['$D_E$='+str(M)+''],loc='upper left')
-        ##plt.legend(loc='upper left')
-        ###plt.legend(['$D_E$=3', '$D_E$=4', '$D_E$=5'],loc='upper left')
-        ####plt.legend()
-        
-               
-        #plt.hold(True)
-
-        #ax = plt.gca().add_artist(first_legend)
-        #ax = plt.gca().add_artist(second_legend)
-     
-        plt.title('RMSE')
-        plt.xlabel('Time units')        
-        plt.ylabel('RMSE(t)')
-
-        for tick in ax.xaxis.get_ticklabels():
-            tick.set_fontsize('large')
-            #tick.set_fontname('Times New Roman')
-            #tick.set_color('blue')
-            tick.set_weight('bold')
-        for tick in ax.yaxis.get_ticklabels():
-            tick.set_fontsize('large')
-            #tick.set_fontname('Times New Roman')
-            #tick.set_color('blue')
-            tick.set_weight('bold')
-        plt.hold(True)
         
         ####### Storing SEs after the 1st minimum to take the mean and variance ############
-        #if n > 250:
-        #    SEstore.append(SE)
+        if n > 250:
+            SEstore.append(SE)
        
-        #    SEmean = np.mean(SEstore)
+            SEmean = np.mean(SEstore)
                 
-        #    SEvareach = (SE-SEmean)**2
-        #    SEvarstore.append(SEvareach)
+            SEvareach = (SE-SEmean)**2
+            SEvarstore.append(SEvareach)
 
-        #    SEvar = np.mean((SE-SEmean)**2)
-          
-        #    #if n > 251:
-        #    plt.figure(5)
-        #    plt.plot(n+1,SEmean,'bo')
-        #    #plt.yscale('log')
-        #    plt.hold(True)
-                
-        #    plt.figure(6)
-        #    plt.plot(n+1,SEvar,'rx')
-        #    #plt.yscale('log')
-        #    plt.hold(True)
-        #    #print 'SEvar', SEvar
+            SEvar = np.mean((SE-SEmean)**2)
+            
+            ####### Plotting the global mean and variance #######
+            fig = plt.figure(2)
+            ax = fig.add_subplot(1, 1, 1) # create an axes object in the figure         
+
+            #if n > 251:
+            ##plt.figure(5)
+            ##plt.plot(n+1,SEmean,'bo')
+            #plt.yscale('log')
+            ##plt.hold(True)
+
+            #color = ['r', 'y', 'b']
+            if M == 3:
+                cc = color[0]
+                #label1=M
+                plt.plot(n+1,SEmean,''+str(cc)+'+',label='$D_E$='+str(M)+'') 
+                lm1, = plt.plot(n+1,SEmean,''+str(cc)+'+',label='$D_E$='+str(M)+'') 
+                plt.yscale('log')
+
+
+            elif M == 4:
+                cc = color[1]
+                #label2=M
+                plt.plot(n+1,SEmean,''+str(cc)+'.',label='$D_E$='+str(M)+'') 
+                lm2, = plt.plot(n+1,SEmean,''+str(cc)+'.',label='$D_E$='+str(M)+'') 
+                plt.yscale('log')
+
+
+            else:
+                cc = color[2]
+                #label3=M
+                plt.plot(n+1,SEmean,''+str(cc)+'x',label='$D_E$='+str(M)+'') 
+                lm3, = plt.plot(n+1,SEmean,''+str(cc)+'x',label='$D_E$='+str(M)+'') 
+                plt.yscale('log')
+
+            #plt.hold(True)
+
+            plt.title('Cumulative mean of the RMSE')
+            plt.xlabel('Time units')        
+            plt.ylabel('Mean')
+
+            for tick in ax.xaxis.get_ticklabels():
+                tick.set_fontsize('large')
+                #tick.set_fontname('Times New Roman')
+                #tick.set_color('blue')
+                tick.set_weight('bold')
+            for tick in ax.yaxis.get_ticklabels():
+                tick.set_fontsize('large')
+                #tick.set_fontname('Times New Roman')
+                #tick.set_color('blue')
+                tick.set_weight('bold')
+
+            plt.hold(True)
+    
+
+            
+            ##plt.figure(6)
+            ##plt.plot(n+1,SEvar,'rx')
+            #plt.yscale('log')
+            ##plt.hold(True)
+            #print 'SEvar', SEvar
 
     #SEmeantot = np.mean(SEstore)
     #SEvartot = np.mean(SEvarstore)
@@ -487,7 +477,11 @@ for w in range(3,6):
 #plt.legend()
 #plt.legend([label1,label2,label3],loc='best')
 
-plt.legend((l1, l2, l3),(l1.get_label(),l2.get_label(),l3.get_label()), loc='best')
+#plt.legend((l1, l2, l3),(l1.get_label(),l2.get_label(),l3.get_label()), loc='best')
+#plt.show()
+plt.legend((lm1, lm2, lm3),(lm1.get_label(),lm2.get_label(),lm3.get_label()), loc='best')
+
+#plt.legend((l1, l2, l3),(lm1, lm2, lm3),(l1.get_label(),l2.get_label(),l3.get_label(),(lm1.get_label(),lm2.get_label(),lm3.get_label()), loc='best')
 plt.show()
 
 print time.clock() - start_time, "seconds"
