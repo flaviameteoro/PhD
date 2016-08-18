@@ -16,7 +16,7 @@ fc = 12500
 D = 20 
 F=8.17
 
-M = 3
+M = 5
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
@@ -24,12 +24,11 @@ print 'D=', D, 'variables and M=', M ,'time-delays'
 Nens = 50    # ensemble size 
 
 ############# To plot different time-delays in the same graph ##################
-for w in range(3,6):
-    M = w
-    print 'M', M
-    #print 'x[:,1]', x[:,1]
-
-
+sigma_list = [0.1,0.01,0.001]
+for w in sigma_list:
+    sigma = w
+    print 'sigma', sigma
+    
     ###################### Seeding for 20 variables########################
     #r = 5
     #r=18 #for x[:,0] = xtrue[:,0]
@@ -109,39 +108,10 @@ for w in range(3,6):
 
     ################### Creating the obs ##################################
     y = np.zeros([L,N+1]) 
-    ###### No noise for y (with SPINUP, ok for seeds = 37,18,44 - rank M=10 and ok for r= 39 - rank 8!!)
-    #y = np.dot(h,xtrue) 
-
-    ###### Good noise values for y (for seed=37)
-    #y = np.dot(h,xtrue) + np.random.uniform(0,1.2680e-04,N+1)-6.34e-05
-    #y = np.dot(h,xtrue) + np.random.uniform(0,1.2680e-04,N+1)-9.34e-05  #(out of zero mean!)
-    #y = np.dot(h,xtrue) + np.random.uniform(0,1.8680e-04,N+1)-9.34e-05
-
-    ###### Noise that runs totally ok for seeds=37 and 44 (rank=9) (after SPINUP-1000) (until 1500 for seed=37 before)  
-    ###### Runs totally ok for seed=18, with SPINUP-1000!!!!!!!!!!!!!!!!!!!
-    ###### Runs until 8500 for seed=39 (rank=8)
-    #y = np.dot(h,xtrue) + np.random.uniform(0,0.001,N+1)-0.0005
-    #y = np.dot(h,xtrue) + np.random.normal(0,0.0005,N+1)     
-
-    ###### Bad noise values for y (for seed=37)
-    #y = np.dot(h,xtrue) + np.random.rand(N+1)-0.5
-    #y = np.dot(h,xtrue) + np.random.uniform(0,0.2,N+1)-0.1     #### OK for 4 obs vars!!! (r = 18)####
-    y = np.dot(h,xtrue) + np.random.normal(0,0.1,N+1)           #### OK for 4 obs vars!!! (r = 18)####
+        
+    y = np.dot(h,xtrue) + np.random.normal(0,sigma,N+1)           #### OK for 4 obs vars!!! (r = 18)####
     sigma2 = 0.01
-    #y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
-    #y = np.dot(h,xtrue) + np.random.uniform(0,0.01,N+1)-0.005
-    ###(for seed=18)
-    #y = np.dot(h,xtrue) + np.random.normal(0,0.01,N+1)  
-
-    ###### Noise that runs perfect until time step 1800 and 2300 (for seed=18, K=40, max_rank=7) 
-    #y = np.dot(h,xtrue) + np.random.uniform(0,0.002,N+1)-0.001
-    #y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
-    #y = np.dot(h,xtrue) + np.random.normal(0,0.001,N+1)  
-
-    #print 'y', y
-    #print 'xtrue', xtrue
-
-
+    
     ############ Defining vectors and matrices ####################
     Ks = 1.e0*np.diag(np.ones([L*M]))  
     
@@ -372,11 +342,11 @@ for w in range(3,6):
         #plt.yscale('log')            
 
         color = ['r', 'y', 'b']
-        if M == 3:
+        if sigma == sigma_list[0]:
             cc = color[0]
             label1=M
-            plt.plot(n+1,SE,''+str(cc)+'+',label='$D_E$='+str(M)+'') 
-            l1, = plt.plot(n+1,SE,''+str(cc)+'+',label='$D_E$='+str(M)+'') 
+            plt.plot(n+1,SE,''+str(cc)+'+',label='$\sigma_o$='+str(sigma)+'') 
+            l1, = plt.plot(n+1,SE,''+str(cc)+'+',label='$\sigma_o$='+str(sigma)+'') 
             plt.yscale('log')
 
             #plt.plot(n+1,SE,''+str(cc)+'.',label='label1') 
@@ -391,11 +361,11 @@ for w in range(3,6):
             #ax = fig.add_subplot(1, 1, 1)
             #ax.plot(n+1,SE,''+str(cc)+'.',label='label1') 
             #ax.set_yscale('log')
-        elif M == 4:
+        elif sigma == sigma_list[1]:
             cc = color[1]
             label2=M
-            plt.plot(n+1,SE,''+str(cc)+'.',label='$D_E$='+str(M)+'') 
-            l2, = plt.plot(n+1,SE,''+str(cc)+'.',label='$D_E$='+str(M)+'') 
+            plt.plot(n+1,SE,''+str(cc)+'.',label='$\sigma_o$='+str(sigma)+'') 
+            l2, = plt.plot(n+1,SE,''+str(cc)+'.',label='$\sigma_o$='+str(sigma)+'') 
             plt.yscale('log')
 
             #plt.plot(n+1,SE,''+str(cc)+'.',label='label2') #
@@ -411,8 +381,8 @@ for w in range(3,6):
         else:
             cc = color[2]
             label3=M
-            plt.plot(n+1,SE,''+str(cc)+'x',label='$D_E$='+str(M)+'') 
-            l3, = plt.plot(n+1,SE,''+str(cc)+'x',label='$D_E$='+str(M)+'') 
+            plt.plot(n+1,SE,''+str(cc)+'x',label='$\sigma_o$='+str(sigma)+'') 
+            l3, = plt.plot(n+1,SE,''+str(cc)+'x',label='$\sigma_o$='+str(sigma)+'') 
             plt.yscale('log')
 
             #plt.plot(n+1,SE,''+str(cc)+'.',label='label3') 

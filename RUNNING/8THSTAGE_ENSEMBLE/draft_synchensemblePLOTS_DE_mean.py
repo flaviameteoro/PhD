@@ -162,7 +162,7 @@ for w in range(3,6):
     SEstore = []                     #### for calculating the mean and variance of the total SEs ####
     SEvarstore = []                  #### for calculating the mean and variance of the total SEs ####
 
-    run = 3000
+    run = 3000   # For the mean calculation you need at least run = 251!!!!!
 
     oo = np.zeros([1,run+1])         #for observability calculation
     svmaxvec = np.zeros([1,run+1]) 
