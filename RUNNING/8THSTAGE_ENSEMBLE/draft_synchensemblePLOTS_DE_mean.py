@@ -21,7 +21,7 @@ tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
-Nens = 50    # ensemble size 
+Nens = 20    # ensemble size 
 
 ############# To plot different time-delays in the same graph ##################
 for w in range(3,6):

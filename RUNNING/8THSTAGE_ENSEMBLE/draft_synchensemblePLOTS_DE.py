@@ -21,7 +21,7 @@ tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
-Nens = 50    # ensemble size 
+Nens = 20    # ensemble size 
 
 ############# To plot different time-delays in the same graph ##################
 for w in range(3,6):
@@ -354,6 +354,7 @@ for w in range(3,6):
         SE = np.sqrt(np.mean(np.square(dd)))            
         print 'SE for', n, 'is', SE
         
+
         ####### Plotting the synchronisation error (RMSE) #######
         fig = plt.figure(1)
         ax = fig.add_subplot(1, 1, 1) # create an axes object in the figure
@@ -447,12 +448,12 @@ for w in range(3,6):
             tick.set_fontsize('large')
             #tick.set_fontname('Times New Roman')
             #tick.set_color('blue')
-            tick.set_weight('bold')
+            ##tick.set_weight('bold')
         for tick in ax.yaxis.get_ticklabels():
             tick.set_fontsize('large')
             #tick.set_fontname('Times New Roman')
             #tick.set_color('blue')
-            tick.set_weight('bold')
+            ##tick.set_weight('bold')
         plt.hold(True)
         
         ####### Storing SEs after the 1st minimum to take the mean and variance ############

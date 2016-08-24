@@ -24,9 +24,9 @@ print 'D=', D, 'variables and M=', M ,'time-delays'
 Nens = 50    # ensemble size 
 
 ############# To plot different time-delays in the same graph ##################
-#Nens_list = [10,50,100,200]
-Nens_list = [10,20,50]
-#Nens_list = [20,50]
+Nens_list = [10,15,20,50]
+#ns_list = [10,15,20]
+#Nens_list = [10,15]
 for w in Nens_list:
     Nens = w
     print 'Nens', Nens
@@ -164,7 +164,7 @@ for w in Nens_list:
     SEstore = []                     #### for calculating the mean and variance of the total SEs ####
     SEvarstore = []                  #### for calculating the mean and variance of the total SEs ####
 
-    run = 3000
+    run = 100
 
     oo = np.zeros([1,run+1])         #for observability calculation
     svmaxvec = np.zeros([1,run+1]) 
@@ -293,6 +293,28 @@ for w in Nens_list:
         #print 'V', V.shape
         #print 'ln(G)', np.log(G)
 
+        ##### Calculating singular values, condition number, observability and ratios ######
+        svmin = np.min(G)
+        #svminrank = svmin
+        #print 'Smallest sing value:', svmin              #no influence until now...(around e-03)
+        svmax = np.max(G) 
+        #print 'Largest sing value:', svmax   
+        svmaxvec[:,n] = svmax
+        svmaxvec2[:,n] = G[1]
+        difmax = abs(svmaxvec[:,n] - svmaxvec[:,n-1])
+        difmax2 = abs(svmaxvec2[:,n] - svmaxvec2[:,n-1])
+        ###difmax = svmaxvec[:,n] - svmaxvec[:,n-1]
+        #print 'Difmax=', difmax
+        
+        difsv = svmax - svmin    
+        ratioobs = svmin/svmax
+        condnumber = svmax/svmin
+        #print 'Condition number is', condnumber
+        oo[:,n] = (ratioobs)**2
+        obin = np.sum(oo)   
+        #print 'observability', observ                   #no influence until now...(between e-05 and e-04)
+
+        ##### Proceeding with SVD computation...#######
         mask = np.ones(len(G)) 
         for k in range(len(G)):
             #mask = np.ones(len(G))        
@@ -360,42 +382,46 @@ for w in Nens_list:
         fig = plt.figure(1)
         ax = fig.add_subplot(1, 1, 1) # create an axes object in the figure
         
-        color = ['r', 'b', 'g', 'y']
+        color = ['r', 'b', 'g', 'm']
 
         if Nens == Nens_list[0]:
             cc = color[0]
  
-            plt.plot(n+1,SE,''+str(cc)+'+',label='Nens='+str(Nens)+'') 
-            l1, = plt.plot(n+1,SE,''+str(cc)+'+',label='Nens='+str(Nens)+'') 
+            plt.plot(n+1,condnumber,''+str(cc)+'+',label='Nens='+str(Nens)+'') 
+            l1, = plt.plot(n+1,condnumber,''+str(cc)+'+',label='Nens='+str(Nens)+'') 
+            #plt.plot(n+1,condnumber,'m.') 
             plt.yscale('log')
 
 
         elif Nens == Nens_list[1]:
             cc = color[1]
  
-            plt.plot(n+1,SE,''+str(cc)+'o',label='Nens='+str(Nens)+'') 
-            l2, = plt.plot(n+1,SE,''+str(cc)+'o',label='Nens='+str(Nens)+'') 
+            plt.plot(n+1,condnumber,''+str(cc)+'o',label='Nens='+str(Nens)+'') 
+            l2, = plt.plot(n+1,condnumber,''+str(cc)+'o',label='Nens='+str(Nens)+'') 
+            #plt.plot(n+1,condnumber,'y.') 
             plt.yscale('log')
 
 
         elif Nens == Nens_list[2]:
             cc = color[2]
 
-            plt.plot(n+1,SE,''+str(cc)+'x',label='Nens='+str(Nens)+'') 
-            l3, = plt.plot(n+1,SE,''+str(cc)+'x',label='Nens='+str(Nens)+'') 
+            plt.plot(n+1,condnumber,''+str(cc)+'x',label='Nens='+str(Nens)+'') 
+            l3, = plt.plot(n+1,condnumber,''+str(cc)+'x',label='Nens='+str(Nens)+'') 
+            #plt.plot(n+1,condnumber,'m.') 
             plt.yscale('log')
 
 
         else:
             cc = color[3]
 
-            plt.plot(n+1,SE,''+str(cc)+'.',label='Nens='+str(Nens)+'') 
-            l4, = plt.plot(n+1,SE,''+str(cc)+'.',label='Nens='+str(Nens)+'') 
+            plt.plot(n+1,condnumber,''+str(cc)+'.',label='Nens='+str(Nens)+'') 
+            l4, = plt.plot(n+1,condnumber,''+str(cc)+'.',label='Nens='+str(Nens)+'') 
+            #plt.plot(n+1,condnumber,'m.') 
             plt.yscale('log')
 
-        plt.title('RMSE')
+        plt.title('Condition number')
         plt.xlabel('Time units')        
-        plt.ylabel('RMSE(t)')
+        plt.ylabel('cond number')
 
         for tick in ax.xaxis.get_ticklabels():
             tick.set_fontsize('large')
@@ -441,8 +467,8 @@ for w in Nens_list:
 #plt.legend()
 #plt.legend([label1,label2,label3],loc='best')
 
-#plt.legend((l1, l2, l3, l4),(l1.get_label(),l2.get_label(),l3.get_label(),l4.get_label()), loc='best')
-plt.legend((l1, l2, l3),(l1.get_label(),l2.get_label(),l3.get_label()), loc='best')
+plt.legend((l1, l2, l3, l4),(l1.get_label(),l2.get_label(),l3.get_label(),l4.get_label()), loc='best')
+#plt.legend((l1, l2, l3),(l1.get_label(),l2.get_label(),l3.get_label()), loc='best')
 #plt.legend((l1, l2),(l1.get_label(),l2.get_label()), loc='best')
 plt.show()
 
