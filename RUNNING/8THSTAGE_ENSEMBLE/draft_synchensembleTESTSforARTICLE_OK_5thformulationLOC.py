@@ -14,15 +14,15 @@ Obs = 100
 dt = 0.01    
 fc = 12999
 
-D = 20 
+D = 100 
 F=8.17
 
-M = 3
+M = 5
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
-Nens = 15  # ensemble size 
+Nens = 20  # ensemble size 
 
 
 ###################### Seeding for 20 variables########################
@@ -36,7 +36,7 @@ np.random.seed(r)
 
 
 #################### Constructing h (obs operator) ##################
-observed_vars = range(5)    
+observed_vars = range(20)    
 L = len(observed_vars) 
 h = np.zeros([L,D])       
 for i in range(L):          
@@ -190,9 +190,10 @@ A = np.zeros([D,Nens])           ### for the covariance matrix ###
 B = np.zeros([D,Nens])           ### for the covariance matrix ###
 C = np.zeros([D,D])              ### covariance matrix ###   
 
-loc = 15.
+loc = 100.
 dloc = np.zeros(M*L)
 dYS = np.zeros(M*L)
+newdYS = np.zeros([1,M*L])
 ########################### Main loop ##########################################
 
 for n in range(1,run+1):
@@ -376,14 +377,17 @@ for n in range(1,run+1):
 
     dx2 = np.dot(A,dx1)
 
+    #print 'dx2', dx2
+
     for i in range(D):
         #print 'var', i
         for j in range(M*L):
             l = np.mod(j,L)*(L-1)
+            #print 'Var:', i, 'measurement:', j, 'l is', l
             dist1 = min(np.abs(i-l),D-np.abs(i-l))
             dist = (dist1)**2
 
-            #print 'dist for var',i, ':', dist
+            #print 'dist for var',i, ':', dist1
 
             if (dist1 > (3*loc)):
                 dloc[j] = 0.
@@ -393,15 +397,20 @@ for n in range(1,run+1):
         #print 'dloc for var',i, ':', dloc
         
         for k in range(M*L):
-            ##i_dYS = dYS[:,k]
+            i_dYS = dYS[:,k]
+            #print 'i_dYS', i_dYS
+            #print 'i_dYS[0]', i_dYS[0]
             #print 'dloc[0]', dloc[0]
             #print 'i_dYS[0]', i_dYS[0]
             ##dYS[:,k] = dloc[k]*i_dYS[0]          # SCHUR Product!!
-            dYS[:,k] = dloc[k]*dYS[:,k]            # SCHUR Product!! 
-        ##print 'New dYS to use in the variable equation to find var', i, ':', dYS
+            #print 'dloc[k]', dloc[k]
+            #print 'dYS[:,k]', dYS[:,k].shape
+            i_newdYS = dloc[k]*i_dYS[0]            # SCHUR Product!! 
+            newdYS[:,k] = i_newdYS
+        #print 'New dYS to use in the variable equation to find var', i, ':', dYS
 
-        dx3 = np.dot(dx2[i,:],np.transpose(dYS)) 
-        #print 'dx3', dx3.shape
+        dx3 = np.dot(dx2[i,:],np.transpose(newdYS)) 
+        #print 'dx3 for var',i, ':', dx3
 
         DX[i] = dx3[0] 
         #dx2 = np.dot(Ks,np.transpose((Y-S)))    # For all formulations apart from 5th
