@@ -17,7 +17,7 @@ fc = 12999
 D = 100 
 F=8.17
 
-M = 5
+M = 3
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
@@ -190,7 +190,7 @@ A = np.zeros([D,Nens])           ### for the covariance matrix ###
 B = np.zeros([D,Nens])           ### for the covariance matrix ###
 C = np.zeros([D,D])              ### covariance matrix ###   
 
-loc = 100.
+loc = 5.
 dloc = np.zeros(M*L)
 dYS = np.zeros(M*L)
 newdYS = np.zeros([1,M*L])
@@ -382,12 +382,28 @@ for n in range(1,run+1):
     for i in range(D):
         #print 'var', i
         for j in range(M*L):
-            l = np.mod(j,L)*(L-1)
-            #print 'Var:', i, 'measurement:', j, 'l is', l
+            #l1 = np.mod(j,L)*(L-1)
+            l1 = np.mod(j,L)*(D/L)
+            #print 'Initial l1', l1
+
+            if l1 > D:
+                #while l > D:                                   ###### to avoid negative distances #####
+                for aa in range(1,L):
+                    #l = l1 + aa*D
+                    l = np.abs(l1) - aa*D 
+                    #print 'new l1', l1
+                    if l < D:
+                        break
+            else:
+                l = l1
+            #print 'Var:', i, 'measurement position:', j, 'l is', l
+            #print 'Var:', i, 'l is', l
+
             dist1 = min(np.abs(i-l),D-np.abs(i-l))
             dist = (dist1)**2
 
             #print 'dist for var',i, ':', dist1
+            #print 'dist', dist1
 
             if (dist1 > (3*loc)):
                 dloc[j] = 0.
