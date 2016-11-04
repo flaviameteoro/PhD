@@ -36,7 +36,7 @@ np.random.seed(r)
 
 
 #################### Constructing h (obs operator) ##################
-observed_vars = range(250)    
+observed_vars = range(5)    
 L = len(observed_vars) 
 h = np.zeros([L,D])       
 for i in range(L):          
@@ -191,12 +191,16 @@ A = np.zeros([D,Nens])           ### for the covariance matrix ###
 B = np.zeros([D,Nens])           ### for the covariance matrix ###
 C = np.zeros([D,D])              ### covariance matrix ###   
 
-loc = 5.
+loc = 1000.
 dloc = np.zeros(M*L)
 dYS = np.zeros(M*L)
 newdYS = np.zeros([1,M*L])
 
 EnsBdic = {}
+Edic = {}
+#EnsBdic = set()
+#Edic = {'1','2','3','4'}
+#print 'Edic', Edic
 ########################### Main loop ##########################################
 
 for n in range(1,run+1):
@@ -257,7 +261,31 @@ for n in range(1,run+1):
                     #random = np.random.rand(D)-0.5
                     EnsB[:,j] = mod.lorenz96(EnsB[:,j],random,dt) 
                 #print 'Ensemble for time', i+1, 'is', Ens
-
+                if i == nTau:
+                    print 'EnsB is', EnsB
+                    globals()['EnsB%s' % m] = EnsB
+                    print 'For m', m, 'EnsB is', EnsB%m
+            #idic = str(0)+str(m-1)
+            #EnsBdic = {EnsB}
+            #print EnsBdic
+            #print 'For m', m, 'i_dic is', idic
+            #print EnsB.shape
+            #EnsBdic[idic] = EnsB 
+            #print 'EnsBdic to be updated', EnsBdic[i_dic]
+            #print 'EnsBdic', EnsBdic
+            #print 'm', m
+            #if m == 2:
+                #EnsBdic['alpha'] = EnsB 
+                #Edic['1'] = EnsB
+                #print 'EnsBdic', EnsBdic
+                #print 'Edic', Edic
+            #else:
+                #EnsBdic['beta'] = EnsB 
+                #Edic['2'] = EnsB
+                #print 'EnsBdic', EnsBdic
+                #print 'Edic', Edic
+            #print 'EnsBdic', EnsBdic
+            
             ######## Calculate the mean and covariance of the ensemble#################
             ############ Mean ################    
             for a in range(D):
@@ -272,12 +300,14 @@ for n in range(1,run+1):
 
         else:
             ####### Propagate the ensemble members ONLY from the next (M*tau)+n time step ahead #########
-            #for j in range(len(EnsB[0,:])):
             random = np.zeros(D)
             
             ii_dic = m-1
             LastEnsB = EnsBdic[ii_dic]
-            EnsB[:,j] = mod.lorenz96(LastEnsB[:,j],random,dt) 
+            print 'LastEnsB', LastEnsB.shape
+
+            for j in range(len(EnsB[0,:])):
+                EnsB[:,j] = mod.lorenz96(LastEnsB[:,j],random,dt) 
                         
 
         #C = (np.dot(B,np.transpose(A)))/(Nens-1)   ## 1st try
@@ -336,9 +366,14 @@ for n in range(1,run+1):
         dsdx[idxs:idxs+L,:] = np.dot(h,B)  
         #print 'dsdx', dsdx
 
-        i_dic = m-1
-        EnsBdic[i_dic] = EnsB
-        print EnsBdic
+        #idic = str(0)+str(m-1)
+        #print 'm',  m
+        #EnsBdic[idic] = EnsB 
+        #print EnsBdic
+        #for i = m:
+        #('EnsB_%d' %m) = EnsB
+
+    #print EnsBdic    
 
     #print 'dsdx', dsdx
 
