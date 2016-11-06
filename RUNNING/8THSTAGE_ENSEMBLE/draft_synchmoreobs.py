@@ -9,15 +9,15 @@ start_time2 = time.time()
 #print 'time', start_time2
 
 #################### Initial settings ################################
-N = 12500
+N = 13000
 Obs = 100
 dt = 0.01    #original value=0.01
-fc = 12499
+fc = 12999
 
 D = 20 
 F=8.17
 
-M = 4
+M = 5
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
@@ -161,6 +161,9 @@ run = 9950
 oo = np.zeros([1,run+1])      #for observability calculation
 svmaxvec = np.zeros([1,run+1]) 
 svmaxvec2 = np.zeros([1,run+1]) 
+
+dlyaini = x[:,1] - xtrue[:,1]
+#print 'dlyaini', dlyaini
 
 for n in range(1,run+1):
     t = (n-1)*dt
@@ -338,6 +341,46 @@ for n in range(1,run+1):
         
     #print 'x[:,n+1] at', n+1, 'is', x[:,n+1]
 
+    ###################Calculating and plotting Lyapunov exponents ########################
+    dlya = x[:,n+1] - xtrue[:,n+1]
+    #print 'dlya', dlya
+    dl = abs(dlya/dlyaini)   
+    #print 'dl', dl
+    lya = (1/float(n))*(np.log(dl))
+    
+    #lyaposit = 0
+    #for i in range(D):
+    #    if lya[i] > 0:
+    #        lyaposit = lyaposit + 1
+    #print 'Lyapositive', lyaposit
+
+    plt.figure(1).suptitle('Positive Lyapunov Exponents')
+    #plt.axhline(y=0, xmin=0, xmax=run, linewidth=1, color = 'm')
+    ##for i in range(D):   
+    ###for i in range(D):                   # to plot all variables!!
+        ###plt.subplot(D/4,4,i+1)           # to plot all variables!!
+    #for i in range(D/3):
+    for i in range(D/2):                    # for 20 vars
+       #plt.subplot(np.ceil(D/8.0),2,i+1)  
+        plt.subplot(5,2,i+1)
+        if lya[i] >0:
+            plt.plot(n+1,lya[i],'y.',label='truth')
+            plt.yscale('log')
+            plt.ylabel('x['+str(i)+']',fontsize=8)
+            plt.hold(True)
+
+    plt.figure(2).suptitle('Positive Lyapunov Exponents')
+    #plt.axhline(y=0, xmin=0, xmax=run, linewidth=1, color = 'm')
+    for k in range(D/2,D):                  # for 20 vars
+        i2 = k - 10
+        plt.subplot(5,2,i2+1)
+        if lya[k] >0:
+            plt.plot(n+1,lya[k],'y.',label='truth')
+            plt.yscale('log')
+            plt.ylabel('x['+str(k)+']',fontsize=8)
+            plt.hold(True)
+
+###################### Calculating and plotting SE values ###############
     ##if np.mod(n+1,10) == 1:
         ##SE = np.zeros([D,n+1])
         ##for d in range(n+1):
@@ -353,7 +396,7 @@ for n in range(1,run+1):
     SE = np.sqrt(np.mean(np.square(dd)))            
     print 'SE for', n, 'is', SE
     
-    fig = plt.figure(1)
+    fig = plt.figure(3)
     ax = fig.add_subplot(1, 1, 1) # create an axes object in the figure
     plt.plot(n+1,SE,'b*') 
     plt.yscale('log')
@@ -503,16 +546,24 @@ for w in range(run+1,fc):
 ######################## Plotting variables ###############################
 plt.figure(figsize=(12, 10)).suptitle('Variables for D='+str(D)+', M='+str(M)+', r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
 #for i in range(D/3):
-#for i in range(D/2):  # for 20 vars
-for i in range(D/4):   # for 20-40 vars
+for i in range(D/2):  # for 20 vars
+#for i in range(D/4):   # for 20-40 vars
 #for i in range(D/20):   # for 100 vars
+#for i in range(D/100):   # for 1000 vars
 #    plt.subplot(np.ceil(D/8.0),2,i+1)
     plt.subplot(5,2,i+1)
     #plt.subplot(5,5,i+1)
-    if i == 0:  
-        plt.plot(y[0,:],'r.',label='obs')   ## create y with no zeros to plot correctly ###
-        plt.hold(True)      
-           
+    #if i == 0:  
+        #plt.plot(y[0,:],'r.',label='obs')   ## create y with no zeros to plot correctly ###
+        #plt.hold(True)      
+    ################## Plotting the observations ###########################
+    i_obs = (D/L)
+    if np.mod(i,i_obs) == 0:   
+        i_y = i/i_obs
+        plt.plot(y[i_y,:],'r.',label='obs')   ## create y with no zeros to plot correctly ###
+        plt.hold(True)
+
+    ##################### Plotting the variables ###########################
     plt.plot(x[i,:],'g',label='X')
     plt.hold(True)
     plt.plot(xtrue[i,:],'b-',linewidth=2.0,label='truth')
@@ -522,9 +573,10 @@ for i in range(D/4):   # for 20-40 vars
     plt.xlabel('time steps')
 
 plt.figure(figsize=(12, 10)).suptitle('Variables for D='+str(D)+', M='+str(M)+', r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
-#for k in range(D/2,D):  # for 20 vars
-for k in range(D/4,D/2):  # for 20-40 vars
+for k in range(D/2,D):  # for 20 vars
+#for k in range(D/4,D/2):  # for 20-40 vars
 #for k in range(D/20,D/10):  # for 100 vars
+#for k in range(D/100,D/50):   # for 1000 vars
 #for i in range(D/3):
 #for i in range(D):
     #plt.subplot(np.ceil(D/8.0),2,i+1)
@@ -532,7 +584,14 @@ for k in range(D/4,D/2):  # for 20-40 vars
     plt.subplot(5,2,i2+1)
     #plt.subplot(5,5,i2+1)
     #plt.subplot(5,4,i+1)
-    
+    ################## Plotting the observations ###########################
+    i_obs = (D/L)
+    if np.mod(k,i_obs) == 0:   
+        i_y = k/i_obs
+        plt.plot(y[i_y,:],'r.',label='obs')   ## create y with no zeros to plot correctly ###
+        plt.hold(True)
+
+    ##################### Plotting the variables ###########################    
     plt.plot(x[k,:],'g',label='X')
     plt.hold(True)
     plt.plot(xtrue[k,:],'b-',linewidth=2.0,label='truth')
