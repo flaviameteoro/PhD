@@ -68,7 +68,7 @@ for w in range(2,6):
 
     ######### Setting tolerance and maximum for rank calculations ########
     pinv_tol =  (np.finfo(float).eps)#*max((M,D))#apparently same results as only 2.2204e-16
-    max_pinv_rank = L
+    max_pinv_rank = 2*L
 
 
     ################### Creating truth ###################################
@@ -167,7 +167,7 @@ for w in range(2,6):
     SEplot = []                      #### for plotting lines for SEs ####
 
 
-    run = 9950
+    run = 10
 
     oo = np.zeros([1,run+1])      #for observability calculation
     svmaxvec = np.zeros([1,run+1]) 
@@ -491,17 +491,21 @@ for w in range(run+1,fc):
 ######################## Plotting variables ###############################
 plt.figure(figsize=(12, 10)).suptitle('Variables for D='+str(D)+', M='+str(M)+', r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
 #for i in range(D/3):
-#for i in range(D/2):  # for 20 vars
-#for i in range(D/4):   # for 20-40 vars
-for i in range(D/20):   # for 100 vars
+for i in range(D/2):  # for 20 vars
+#for i in range(D/4):   # for 40 vars
+#for i in range(D/20):   # for 100 vars
 #for i in range(D/100):   # for 1000 vars
 #    plt.subplot(np.ceil(D/8.0),2,i+1)
     plt.subplot(5,2,i+1)
     #plt.subplot(5,5,i+1)
-    if i == 0:  
-        plt.plot(y[0,:],'r.',label='obs')   ## create y with no zeros to plot correctly ###
-        plt.hold(True)      
-           
+    ################## Plotting the observations ###########################
+    i_obs = (D/L)
+    if np.mod(i,i_obs) == 0:   
+        i_y = i/i_obs
+        plt.plot(y[i_y,:],'r.',label='obs')   ## create y with no zeros to plot correctly ###
+        plt.hold(True)
+
+    ##################### Plotting the variables ###########################
     plt.plot(x[i,:],'g',label='X')
     plt.hold(True)
     plt.plot(xtrue[i,:],'b-',linewidth=2.0,label='truth')
@@ -511,9 +515,9 @@ for i in range(D/20):   # for 100 vars
     plt.xlabel('time steps')
 
 plt.figure(figsize=(12, 10)).suptitle('Variables for D='+str(D)+', M='+str(M)+', r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
-#for k in range(D/2,D):  # for 20 vars
-#for k in range(D/4,D/2):  # for 20-40 vars
-for k in range(D/20,D/10):  # for 100 vars
+for k in range(D/2,D):  # for 20 vars
+#for k in range(D/4,D/2):  # for 40 vars
+#for k in range(D/20,D/10):  # for 100 vars
 #for k in range(D/100,D/50):   # for 1000 vars
 #for i in range(D/3):
 #for i in range(D):
@@ -522,7 +526,14 @@ for k in range(D/20,D/10):  # for 100 vars
     plt.subplot(5,2,i2+1)
     #plt.subplot(5,5,i2+1)
     #plt.subplot(5,4,i+1)
-    
+    ################## Plotting the observations ###########################
+    i_obs = (D/L)
+    if np.mod(k,i_obs) == 0:   
+        i_y = k/i_obs
+        plt.plot(y[i_y,:],'r.',label='obs')   ## create y with no zeros to plot correctly ###
+        plt.hold(True)
+
+    ##################### Plotting the variables ###########################
     plt.plot(x[k,:],'g',label='X')
     plt.hold(True)
     plt.plot(xtrue[k,:],'b-',linewidth=2.0,label='truth')

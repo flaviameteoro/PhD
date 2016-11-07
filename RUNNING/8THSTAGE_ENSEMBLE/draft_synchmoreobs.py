@@ -14,13 +14,14 @@ Obs = 100
 dt = 0.01    #original value=0.01
 fc = 12999
 
-D = 20 
+D = 20     # Note that max_pinv is now 2L (for all Ds)!
 F=8.17
 
 M = 5
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
+
 
 ###################### Seeding for 20 variables########################
 #r = 5
@@ -42,6 +43,7 @@ for i in range(L):
     h[i,observed_vars[i]*(D/L)] = 1.0 ######MORE OBS######### for observing vars equally sparsed
 print 'h', h
 
+
 ################### Setting coupling matrices ########################
 K = 1.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
 #print 'K', K
@@ -60,13 +62,14 @@ Ks = 1.e0*np.diag(np.ones([L*M]))
 
 ######### Setting tolerance and maximum for rank calculations ########
 pinv_tol =  (np.finfo(float).eps)#*max((M,D))#apparently same results as only 2.2204e-16
-max_pinv_rank = L
+max_pinv_rank = 2*L
 
 
 ################### Creating truth ###################################
 xtrue = np.zeros([D,N+1])
 #***xtrue[:,0] = np.random.rand(D)  #Changed to randn! It runned for both 10 and 20 variables
 #print 'xtrue[:,0]', xtrue[:,0]
+
 
 ####### Start by spinning model in ###########
 xtest = np.zeros([D,1001]) 
@@ -77,6 +80,7 @@ for j in range(1000):
          
 xtrue[:,0] = xtest[:,1000]
 print 'xtrue[:,0]', xtrue[:,0]
+
 
 ###### Plot xtrue to understand initial conditions influences ####
 #plt.figure(1).suptitle('xtrue for seed='+str(r)+'')
@@ -165,6 +169,8 @@ svmaxvec2 = np.zeros([1,run+1])
 dlyaini = x[:,1] - xtrue[:,1]
 #print 'dlyaini', dlyaini
 
+
+########################### Main loop ######################################
 for n in range(1,run+1):
     t = (n-1)*dt
 
@@ -242,6 +248,8 @@ for n in range(1,run+1):
     #print 'V', V.shape
     #print 'ln(G)', np.log(G)
 
+
+    ################### Calculating singular values, condition number, observability and ratios ########################
     svmin = np.min(G)
     #print 'Smallest sing value:', svmin              #no influence until now...(around e-03)
     svmax = np.max(G) 
@@ -253,7 +261,17 @@ for n in range(1,run+1):
     ###difmax = svmaxvec[:,n] - svmaxvec[:,n-1]
     #print 'Difmax=', difmax
 
+    condnumber = svmax/svmin
 
+    difsv = svmax - svmin    
+    ratioobs = svmin/svmax
+    
+    oo[:,n] = (ratioobs)**2
+    obin = np.sum(oo)   
+    #print 'observability', observ                   #no influence until now...(between e-05 and e-04)
+
+
+    ################ Proceeding with SVD computation...##############
     mask = np.ones(len(G)) 
     for k in range(len(G)):
         #mask = np.ones(len(G))        
@@ -279,15 +297,8 @@ for n in range(1,run+1):
     #print 'Y', Y
     #print 'S', S
     
-    difsv = svmax - svmin    
-    ratioobs = svmin/svmax
-    condnumber = svmax/svmin
-    #print 'Condition number is', condnumber
-    oo[:,n] = (ratioobs)**2
-    obin = np.sum(oo)   
-    #print 'observability', observ                   #no influence until now...(between e-05 and e-04)
 
-
+    ####### Calculating the coupling term in coupled dynamics ######
     dx1 = np.dot(K,dxds)
     #print 'dx1', dx1
     dx2 = np.dot(Ks,np.transpose((Y-S)))
@@ -300,47 +311,10 @@ for n in range(1,run+1):
     #print 'ddd', ddd
 
     random = np.zeros(D)
-    #xtran2 = x[:,n] + dx                                           #n3m4
-    #x[:,n+1] = mod.lorenz96(xtran2,random,dt) 
-   
-    ##xtran2 = x[:,n] + dt*dx                                       #4)n2500m4 (peaks) #8)n1m7             
-    ##x[:,n+1] = mod.lorenz96(xtran2,random,dt) 
 
-    ###x[:,n+1] = x[:,n] + dt*(x[:,n] + dx)                         #n193m4
-
-    ####x[:,n+1] = x[:,n] + dt*dx                                   #n787m4
-
-    #####x[:,n+1] = dt*(x[:,n] + dx)                                ##4)n2500m4 (damping) #8)n1m7
-    
-    ######!x[:,n+1] = mod.lorenz96(x[:,n],random,dt) + dx              #n4m2
-
-    #######x[:,n+1] = mod.lorenz96(x[:,n],random,dt) + dt*dx          #4)n2500m4 (peaks) #8)n1m7            
-
-    ########xtran2 = mod.l95(x[:,n],dt) + dx                          #n4m3
-    ########x[:,n+1] = mod.lorenz96(xtran2,random,dt)
-
-    ########xtran2 = mod.l95(x[:,n],dt) + dt*dx                        ##4)n2500m4 (damping) #8)n1m7       
-    ########x[:,n+1] = mod.lorenz96(xtran2,random,dt)
-
-    ##########xtran2 = mod.l95(x[:,n],dt) + dx                          #n4m4
-    ##########x[:,n+1] = mod.rk4(xtran2,dt)
-
-    ###########xtran2 = mod.l95(x[:,n],dt) + dt*dx                       ##4)n2500m4 (damping) #8)n1m7    
-    ###########x[:,n+1] = mod.rk4(xtran2,dt)
-    
     x[:,n+1] = mod.rk4_end(x[:,n],dx,dt) #+ dx0                               #4)n4m2 #4)n2500m4 (peaks) for dt*dx in rk4
 
-    #############ddx = dx*dt                                             #4)n2500m4 (peaks) #8)n1m7 
-    #############x[:,n+1] = mod.rk4_end(x[:,n],ddx,dt) 
-
-    ##############x[:,n+1] = dt*(mod.lorenz96(x[:,n],random,dt) + dx)     ##4)n2500m4 (damping) #8)n1m7 
-
-    ###############xtran2 = dt*(x[:,n] + dx)                                             ##4)n2500m4 (damping)  
-    ###############x[:,n+1] = mod.lorenz96(xtran2,random,dt) 
-
-        
-    #print 'x[:,n+1] at', n+1, 'is', x[:,n+1]
-
+   
     ###################Calculating and plotting Lyapunov exponents ########################
     dlya = x[:,n+1] - xtrue[:,n+1]
     #print 'dlya', dlya
@@ -361,6 +335,9 @@ for n in range(1,run+1):
         ###plt.subplot(D/4,4,i+1)           # to plot all variables!!
     #for i in range(D/3):
     for i in range(D/2):                    # for 20 vars
+    #for i in range(D/10):                   # for 100 vars
+    #for i in range(D/100):                   # for 1000 vars
+    #for i in range(D/500):                   # for 5000 vars
        #plt.subplot(np.ceil(D/8.0),2,i+1)  
         plt.subplot(5,2,i+1)
         if lya[i] >0:
@@ -371,7 +348,10 @@ for n in range(1,run+1):
 
     plt.figure(2).suptitle('Positive Lyapunov Exponents')
     #plt.axhline(y=0, xmin=0, xmax=run, linewidth=1, color = 'm')
-    for k in range(D/2,D):                  # for 20 vars
+    for k in range(D/2,D):                 # for 20 vars
+    #for k in range(D/10,D/5):              # for 100 vars
+    #for k in range(D/100,D/50):             # for 1000 vars
+    #for k in range(D/500,D/250):             # for 5000 vars
         i2 = k - 10
         plt.subplot(5,2,i2+1)
         if lya[k] >0:
@@ -379,6 +359,7 @@ for n in range(1,run+1):
             plt.yscale('log')
             plt.ylabel('x['+str(k)+']',fontsize=8)
             plt.hold(True)
+
 
 ###################### Calculating and plotting SE values ###############
     ##if np.mod(n+1,10) == 1:
@@ -425,8 +406,8 @@ for n in range(1,run+1):
     #plt.plot(n+1,ratioobs,'yo') 
     #plt.hold(True)
   
-    ##plt.plot(n+1,condnumber,'m.') 
-    ##plt.hold(True)
+    #plt.plot(n+1,condnumber,'m.') 
+    #plt.hold(True)
 
     #plt.plot(n+1,obin,'m<') 
     #plt.hold(True)
@@ -547,9 +528,10 @@ for w in range(run+1,fc):
 plt.figure(figsize=(12, 10)).suptitle('Variables for D='+str(D)+', M='+str(M)+', r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
 #for i in range(D/3):
 for i in range(D/2):  # for 20 vars
-#for i in range(D/4):   # for 20-40 vars
-#for i in range(D/20):   # for 100 vars
+#for i in range(D/4):   # for 40 vars
+#for i in range(D/10):   # for 100 vars       old:range(D/20):   
 #for i in range(D/100):   # for 1000 vars
+#for i in range(D/500):     # for 5000 vars
 #    plt.subplot(np.ceil(D/8.0),2,i+1)
     plt.subplot(5,2,i+1)
     #plt.subplot(5,5,i+1)
@@ -574,9 +556,10 @@ for i in range(D/2):  # for 20 vars
 
 plt.figure(figsize=(12, 10)).suptitle('Variables for D='+str(D)+', M='+str(M)+', r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
 for k in range(D/2,D):  # for 20 vars
-#for k in range(D/4,D/2):  # for 20-40 vars
-#for k in range(D/20,D/10):  # for 100 vars
+#for k in range(D/4,D/2):  # for 40 vars
+#for k in range(D/10,D/5):  # for 100 vars    old: range(D/20,D/10): 
 #for k in range(D/100,D/50):   # for 1000 vars
+#for k in range(D/500,D/250):     # for 5000 vars
 #for i in range(D/3):
 #for i in range(D):
     #plt.subplot(np.ceil(D/8.0),2,i+1)
