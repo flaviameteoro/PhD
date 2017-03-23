@@ -22,7 +22,7 @@ tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
-Nens = 5 # ensemble size 
+Nens = 15 # ensemble size 
 
 
 ###################### Seeding for 20 variables########################
@@ -536,7 +536,8 @@ for n in range(1,run+1):
         #print 'S', S
 
         ###### Constructing Y vector 1st element based on the ensemble mean of x[L,n] #######
-        Y[:,0:L] = np.dot(h,E)          ## Same as S vector??? Can I do that??           
+        ##Y[:,0:L] = np.dot(h,E)          ## Same as S vector??? Can I do that??   
+        Y[:,0:L] = y[0:L,n+1]             ## Pick the obs at the next time step        
         #print 'Y', Y    
         dsdx[0:L,:] = h4                ## Probably for all cases, included after the 4th formulation!!    
         #print 'dsdx', dsdx
@@ -577,7 +578,7 @@ for n in range(1,run+1):
             #print 'S at m', m, 'is', S
             #idy = n+(m-1)*nTau
 
-            ##### Arrange Y to get obs for the case of each 2 time steps!! #####
+            ###Arrange Y to get obs as if it were the next time step (observed): case of each 2 time steps!! #####
             Y[:,idxs:idxs+L] = y[0:L,(n+1)+(m-1)*nTau-(m-1)] 
 
             #print 'Y at m', m, 'is', Y

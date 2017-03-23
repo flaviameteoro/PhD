@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Mar 09 13:56:07 2017
+
+@author: Flavia
+"""
+
 #from __future__ import division
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,7 +19,7 @@ start_time2 = time.time()
 N = 1300
 Obs = 100
 dt = 0.01    
-fc = 1190
+fc = 1200
 
 D = 20 
 F=8.17
@@ -22,7 +29,7 @@ tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
-Nens = 10 # ensemble size 
+Nens = 5 # ensemble size 
 
 
 ###################### Seeding for 20 variables########################
@@ -71,11 +78,10 @@ else:
 
 ################### Setting coupling matrices ########################
 K = 1.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
-#print 'K', K.shape
+print 'K', K.shape
 
 K_new = 1.e1*np.diag(np.ones([Nens]))      #Increased to 100 to prevent dx to be divided by a factor of 10!!!! (what made Localisation work) # For the 5th formulation 
-gtau1 = 0.9#2./3.                                # Factor to be applied to the pseudoinv used in the 1st unobserved time step after an observation 
-gtau2 = 0.7#1./3.                                # Factor to be applied to the pseudoinv used in the 2nd unobserved time step after an observation 
+
 
 Ks = 1.e0*np.diag(np.ones([L*M]))  
 
@@ -131,34 +137,9 @@ print 'truth created'
 
 ################### Creating the obs ##################################
 y = np.zeros([L,N+1]) 
-###### No noise for y (with SPINUP, ok for seeds = 37,18,44 - rank M=10 and ok for r= 39 - rank 8!!)
-#y = np.dot(h,xtrue) 
 
-###### Good noise values for y (for seed=37)
-#y = np.dot(h,xtrue) + np.random.uniform(0,1.2680e-04,N+1)-6.34e-05
-#y = np.dot(h,xtrue) + np.random.uniform(0,1.2680e-04,N+1)-9.34e-05  #(out of zero mean!)
-#y = np.dot(h,xtrue) + np.random.uniform(0,1.8680e-04,N+1)-9.34e-05
-
-###### Noise that runs totally ok for seeds=37 and 44 (rank=9) (after SPINUP-1000) (until 1500 for seed=37 before)  
-###### Runs totally ok for seed=18, with SPINUP-1000!!!!!!!!!!!!!!!!!!!
-###### Runs until 8500 for seed=39 (rank=8)
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.001,N+1)-0.0005
-#y = np.dot(h,xtrue) + np.random.normal(0,0.0005,N+1)     
-
-###### Bad noise values for y (for seed=37)
-#y = np.dot(h,xtrue) + np.random.rand(N+1)-0.5
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.2,N+1)-0.1     #### OK for 4 obs vars!!! (r = 18)####
 y = np.dot(h,xtrue) + np.random.normal(0,0.1,N+1)           #### OK for 4 obs vars!!! (r = 18)####
 sigma2 = 0.01
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.01,N+1)-0.005
-###(for seed=18)
-#y = np.dot(h,xtrue) + np.random.normal(0,0.01,N+1)  
-
-###### Noise that runs perfect until time step 1800 and 2300 (for seed=18, K=40, max_rank=7) 
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.002,N+1)-0.001
-#y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
-#y = np.dot(h,xtrue) + np.random.normal(0,0.001,N+1)  
 
 ################################################################################
 ######### Implementing less obs, according to time steps #######################
@@ -181,7 +162,9 @@ for i in range(2,N+1):
     else:
         lastobs = i
 
-#print 'y', y[0,0:20]
+print 'y', y[0,0:20]
+
+
 
 ############ Defining vectors and matrices ####################
 Y = np.zeros([1,M*L])          
@@ -212,8 +195,7 @@ svmaxvec = np.zeros([1,run+1])
 svmaxvec2 = np.zeros([1,run+1]) 
 
 E = np.zeros([D])                ### ensemble mean ###
-E_even = np.zeros([D])           ### ensemble mean for even obs time steps###
-E_post = np.zeros([D])           ### ensemble mean for each after 2 obs time steps###
+E_even = np.zeros([D])         ### ensemble mean for even time steps###
 A = np.zeros([D,Nens])           ### for the covariance matrix ###
 B = np.zeros([D,Nens])           ### for the covariance matrix ###
 C = np.zeros([D,D])              ### covariance matrix ###   
@@ -228,7 +210,7 @@ for n in range(1,run+1):
     ##### Running Ensynch only at odd time steps (when we have obs) #########
     #if np.mod(n,2) == 1:
     
-    ##### Running Ensynch only at every 2 time steps (when we have obs) #####
+    ##### Running Ensynch at every 2 time steps (when we have obs) #########
     if np.all(y[:,n] != 0):
         print 'Running Ensynch for time step', n
 
@@ -247,25 +229,17 @@ for n in range(1,run+1):
 
             #initialEns[:,i] = xtrue[:,0] + force
             Ens[:,i] = x[:,n] + force        # ensemble created from our initial x
-            #print 'Ensemble member', i, 'is', Ens[:,i]
-        #print 'initial ensemble created'
-        #print 'Ens for time', n, 'is', Ens
 
         ############ Calculate the ensemble mean to construct S ########    
         for a in range(D):
             E[a] = np.mean(Ens[a,:])
-        #print 'The ensemble mean is', E
-        #print 'E shape', E.shape 
-        #print 'x is', x[:,n]
-        #print 'x shape', x[:,n].shape
+
        
         ############ For the covariance (time n) ##########  
         for b in range(D):
             for c in range(Nens):
                 A[b,c] = Ens[b,c] - E[b]  
-        #print 'A is', A.shape
-        #Acovar = (np.dot(A,np.transpose(A)))/(Nens-1)    
-        #print 'A covar is', Acovar 
+
 
         ########## Constructing S and Y vectors ########################
         S[:,0:L] = np.dot(h,E)        
@@ -301,42 +275,6 @@ for n in range(1,run+1):
             #print 'B is', B.shape
 
 
-            #C = (np.dot(B,np.transpose(A)))/(Nens-1)   ## 1st try
-
-            ##A_inv = np.linalg.pinv(A)                   ## 3rd try
-            ##C = (np.dot(B,A_inv))/(Nens-1)  
-            
-            ###C = (np.dot(B,A_inv))                       ## 5th try  
-
-            
-            # Assuming covariances are zero (only variances considered), due to inversion ###
-            ####*for f in range(D):
-            ####*    for g in range(D):
-            ####*        if f != g:
-            ####*            C2[f,g] = 0  
-            #print 'C2', C2.shape
-
-            ### Testing different ways of calculating dsdx and dxds ####
-
-            # 1st working formulation: B.At.(AAt)-1 (pseudoinverse) - primary results
-            ##C1 = (np.dot(B,np.transpose(A)))         ## 2nd try
-            ##C2 = (np.dot(A,np.transpose(A)))
-            ##C2_inv = np.linalg.pinv(C2)
-            ##C = (np.dot(C1,C2_inv))
-            ##Jac = C 
-
-            # 2nd working formulation: B.(A)-1 (pseudoinv) - Nancy's suggestion
-            ##C3_inv = np.linalg.pinv(A)
-            ##XX0i = (np.dot(B,C3_inv))  
-            ##Jac = XX0i
-
-            # 3rd NOT working formulation: straight to dxds = A.(B)-1.(h)-1 (pseudoinv) 
-            ##B_inv = np.linalg.pinv(B)
-            ##h_inv = np.linalg.pinv(h)
-            ##idxss = m-2
-            ##ABinv = np.dot(A,B_inv)
-            ##dxds_new[:,idxss:idxss+L] = np.dot(ABinv,h_inv) 
-
             # 4th working formulation: dxds = A.(hB)-1 (pseudoinv)- PJ's
             # dsdx is constructed by h.B
 
@@ -359,8 +297,7 @@ for n in range(1,run+1):
             # For 4th working formulation:
             dsdx[idxs:idxs+L,:] = np.dot(h,B)  
             #print 'dsdx', dsdx
-
-            
+   
         #print 'dsdx', dsdx
 
         ##### Calculating the pseudoinverse (using SVD decomposition) #####
@@ -370,7 +307,6 @@ for n in range(1,run+1):
         #print 'U', U.shape
         #print 'G', G                       
         #print 'V', V.shape
-        #print 'ln(G)', np.log(G)
 
         mask = np.ones(len(G)) 
         for k in range(len(G)):
@@ -397,10 +333,6 @@ for n in range(1,run+1):
         dxds = np.dot(dxds1,(np.transpose(U[:,:])))   # For the 1st, 2nd and 4th working formulations (3rd not working)
 
         #dxds_new = np.dot(A,dxds)       # Add this for the 4th formulation!
-
-        #print 'dxds', dxds 
-        #print 'Y', Y
-        #print 'S', S
         
         #### Calculating the coupling term in coupled dynamics ######
         #dx1 = np.dot(K,dxds)             # For the 1st and 2nd working formulations
@@ -409,14 +341,20 @@ for n in range(1,run+1):
         #print 'dx1', dx1
 
         ######################## Implementing LOCALISATION #########################
-        ##### SUGGESTION of OPTIMISATION:dloc is the same during the whole run, so you can calculate it just once #####
+        ##### "BAD" SUGGESTION of OPTIMISATION:
+        ##### dloc is the same during the whole run, so you can calculate it just once #####
+        ##### ISSUE: dloc is an individual big vector for each var, i.e. needs to store this for the next run
+        ##### which is not advisable...
         #############################################################################
         DX = np.zeros(D)    
         
         dYS = Y-S
         #print 'dYS', dYS
 
-        dx2 = np.dot(A,dx1)
+        
+        ##### This is the implementation of the fewer obs case in which at the unobserved ########
+        ##### time steps t we calculate X(t)X(pseudoinv of the previous observed time step) ######
+        #####dx2 = np.dot(A,dx1)
 
         #print 'dx2', dx2
 
@@ -455,18 +393,16 @@ for n in range(1,run+1):
             
             for k in range(M*L):
                 i_dYS = dYS[:,k]
-                #print 'i_dYS', i_dYS
-                #print 'i_dYS[0]', i_dYS[0]
-                #print 'dloc[0]', dloc[0]
-                #print 'i_dYS[0]', i_dYS[0]
-                ##dYS[:,k] = dloc[k]*i_dYS[0]          # SCHUR Product!!
-                #print 'dloc[k]', dloc[k]
-                #print 'dYS[:,k]', dYS[:,k].shape
+
                 i_newdYS = dloc[k]*i_dYS[0]            # SCHUR Product!! 
                 newdYS[:,k] = i_newdYS
             #print 'New dYS to use in the variable equation to find var', i, ':', dYS
 
-            dx3 = np.dot(dx2[i,:],np.transpose(newdYS)) 
+            dx2 = np.dot(dx1,np.transpose(newdYS))          ### OPTIMISATION: NEW WAY TO CALCULATE THE COUPLING TERM ###
+            print 'dx2 shape', dx2.shape
+            dx3 = np.dot(A[i,:],dx2)                        ### OPTIMISATION: NEW WAY TO CALCULATE THE COUPLING TERM ###
+
+            ###dx3 = np.dot(dx2[i,:],np.transpose(newdYS)) 
             #print 'dx3 for var',i, ':', dx3
 
             DX[i] = dx3[0] 
@@ -487,13 +423,6 @@ for n in range(1,run+1):
         #x[:,n+1] = mod.rk4_end(x[:,n],dx,dt) 
         x[:,n+1] = mod.rk4_end(x[:,n],DX,dt) 
                                    
-            #x[:,n+1] = mod.lorenz96(x[:,n],random,dt) + dx              
-
-            #x[:,n+1] = mod.lorenz96(x[:,n],random,dt) + dt*dx                     
-
-            #print 'x[:,n+1] at', n+1, 'is', x[:,n+1]
-
-        #print 'x[:,n+1] at', n+1, 'is', x[:,n+1]
 
         ####### Calculating the synchronisation error (RMSE) #######
         ##if np.mod(n+1,10) == 1:
@@ -543,169 +472,56 @@ for n in range(1,run+1):
 
             SEvar = np.mean((SE-SEmean)**2)
           
-            #if n > 251:
-            ##plt.figure(5)
-            ##plt.plot(n+1,SEmean,'bo')
-            #plt.yscale('log')
-            ##plt.hold(True)
-                
-            ##plt.figure(6)
-            ##plt.plot(n+1,SEvar,'rx')
-            #plt.yscale('log')
-            ##plt.hold(True)
-            #print 'SEvar', SEvar
-
-
-    elif (n - lastnobs == 1):
-        print 'Using last dxds for time step', n
-        
-                
-        ################################################################################################
-        ########################### 4th ATTEMPT: repeat last dxds ######################################
-                              ######## NOT WORKING YET!!!!!!!!!!!! #############
-        ################################################################################################
-        #x[:,n+1] = mod.rk4_end(x[:,n],DX,dt)
-
-            
-        ################################################################################################
-        ############## 10th ATTEMPT: multiply previous dxds by some factor #############################
-         ######## NOT WORKING WELL (TOTAL RMSE = 0.3+/-) FOR D=20 AND Nens=5 !!!!!!!!!!!! #############
-        ################################################################################################
-        newDX1 = gtau1*DX
-        print 'DX is', DX 
-        print 'newDX is', newDX1         
-        x[:,n+1] = mod.rk4_end(x[:,n],newDX1,dt)
-
-  
-        ####### Calculating the synchronisation error (RMSE) #######
-        dd = np.zeros([D,1])
-        dd[:,0] = xtrue[:,n+1] - x[:,n+1]
-        SE = np.sqrt(np.mean(np.square(dd)))            
-        print 'SE for', n, 'is', SE
-        
-        ####### Plotting the synchronisation error (RMSE) #######
-        fig = plt.figure(1)
-        ax = fig.add_subplot(1, 1, 1) # create an axes object in the figure
-        plt.plot(n+1,SE,'b*') 
-        plt.yscale('log')
-
-        plt.title('RMSE')
-        plt.xlabel('Time units')        
-        plt.ylabel('RMSE(t)')
-        for tick in ax.xaxis.get_ticklabels():
-            tick.set_fontsize('large')
-            #tick.set_fontname('Times New Roman')
-            #tick.set_color('blue')
-            #tick.set_weight('bold')
-        for tick in ax.yaxis.get_ticklabels():
-            tick.set_fontsize('large')
-            #tick.set_fontname('Times New Roman')
-            #tick.set_color('blue')
-            #tick.set_weight('bold')
-        plt.hold(True)
-        
-        ####### Storing SEs after the 1st minimum to take the mean and variance ############
-        if n > 200:
-            SEstore.append(SE)
-       
-            SEmean = np.mean(SEstore)
-                
-            SEvareach = (SE-SEmean)**2
-            SEvarstore.append(SEvareach)
-
-            SEvar = np.mean((SE-SEmean)**2)
-    
-
     else:
+    ##elif (n - lastnobs == 1):
+        #print 'Using last dxds for time step', n
+        
                 
         ################################################################################################
         ########################### 4th ATTEMPT: repeat last dxds ######################################
-         ######## NOT WORKING WELL (TOTAL RMSE = 0.3+/-) FOR D=20 AND Nens=5 !!!!!!!!!!!! #############
+                      ######## WORKING PERFECTLY FOR D=20 AND Nens=5 !!!!!!!!!!!! #############
         ################################################################################################
-        #x[:,n+1] = mod.rk4_end(x[:,n],DX,dt)
-
-
-        ################################################################################################
-        ######## 9th ATTEMPT: repeat last dxds but multiplying it by some other factor #################
-         ######## NOT WORKING WELL (TOTAL RMSE = 0.3+/-) FOR D=20 AND Nens=5 !!!!!!!!!!!! #############
-        ################################################################################################
-        newDX2 = gtau2*DX
-        print 'DX is', DX 
-        print 'newDX is', newDX2         
-        x[:,n+1] = mod.rk4_end(x[:,n],newDX2,dt)
-        
-
-        ################################################################################################
-        ####### 6th ATTEMPT: run the NL model AND take the mean of the ensemble as the next time step######
-                                  ######## NOT WORKING  #############
-        ################################################################################################
-        ##x[:,n+1] = mod.rk4(x[:,n],dt) 
-
-        ##Ens_post = np.zeros([D,Nens])   
-        ##for i in range(len(Ens_post[0,:])):
-            ##force = 0.1*np.random.randn(D) + 0 
-            #force = 0.5*np.random.randn(D)  
-            #force = 2.5*np.random.randn(D)  
-            #force = np.random.randn(D)  
-            ##Ens_post[:,i] = x[:,n+1] + force        # ensemble created from x[:,n]
-
-        ############ Calculate the ensemble mean to construct S ######## 
-        ##for a in range(D):
-            ##E_post[a] = np.mean(Ens_post[a,:])
-        #print 'Mean for time', n, 'is', E_even
-        #print 'x', n, 'is', x[:,n]
-
-        ##x[:,n+1] = E_post
-
-
-
-        ################################################################################################
-        ######################## 7th ATTEMPT: 4 + 6th attempts##########################################
-                                  ######## NOT WORKING  #############
-        ################################################################################################
-        ##x[:,n+1] = mod.rk4_end(x[:,n],DX,dt)
-
-        ##Ens_post = np.zeros([D,Nens])   
-        ##for i in range(len(Ens_post[0,:])):
-            ##force = 0.1*np.random.randn(D) + 0 
-            #force = 0.5*np.random.randn(D)  
-            #force = 2.5*np.random.randn(D)  
-            #force = np.random.randn(D)  
-            ##Ens_post[:,i] = x[:,n+1] + force        # ensemble created from x[:,n]
-
-        ############ Calculate the ensemble mean to construct S ######## 
-        ##for a in range(D):
-            ##E_post[a] = np.mean(Ens_post[a,:])
-        #print 'Mean for time', n, 'is', E_even
-        #print 'x', n, 'is', x[:,n]
-
-        ##x[:,n+1] = E_post
-
-
-
-        ################################################################################################
-        ####### 8th ATTEMPT: run the NL model AND take the mean of the ensemble as the next time step######
-                                  ######## NOT WORKING  #############
-        ################################################################################################
-        ###Ens_post = np.zeros([D,Nens])   
-        ###for i in range(len(Ens_post[0,:])):
-            ###force = 0.1*np.random.randn(D) + 0 
-            #force = 0.5*np.random.randn(D)  
-            #force = np.random.randn(D)  
-            ###Ens_post[:,i] = x[:,n] + force        # ensemble created from x[:,n]
-
-
-        ############ Calculate the ensemble mean to construct S ######## 
-        ###for a in range(D):
-            ###E_post[a] = np.mean(Ens_post[a,:])
-        #print 'Mean for time', n, 'is', E_even
-        #print 'x', n, 'is', x[:,n]
-
-        ###x[:,n] = E_post
         ###x[:,n+1] = mod.rk4_end(x[:,n],DX,dt)
 
+        ################################################################################################
+        ################### 5th ATTEMPT: multiply A(t) with last dxds ##################################
+        ################################################################################################
+        print 'A(n) times last dxds for time step', n
+        
+        ################### Creating ensemble ##########################
+        Ens = np.zeros([D,Nens])
+        for i in range(len(Ens[0,:])):
+            #random = np.random.randn(N)
 
+            ##force = np.random.rand(D) 
+            ##force = np.random.rand(D)-0.5    ## IT SYNCHRONISES WITH THESE UNIF PERTURBATIONS!
+            force = 0.1*np.random.randn(D) + 0 ## IT SYNCHRONISES WITH THESE NORMAL PERTURBATIONS!
+            #print 'force', force
+            #force = dx0
 
+            #initialEns[:,i] = xtrue[:,0] + force
+            Ens[:,i] = x[:,n] + force        # ensemble created from our initial x
+
+        ############ Calculate the ensemble mean to construct S ########    
+        for a in range(D):
+            E[a] = np.mean(Ens[a,:])
+
+       
+        ############ For the covariance (time n) ##########  
+        for b in range(D):
+            for c in range(Nens):
+                A[b,c] = Ens[b,c] - E[b]  
+
+        ######## Multiplying new A by old dxds(Y-S)########
+        dx3 = np.dot(A,dx2)
+        #print 'dx3 shape', dx3.shape
+        #print 'x[:,n]', x[:,n].shape
+        dx3 = dx3.reshape(D)
+        #print 'dx3 new shape', dx3.shape
+
+        x[:,n+1] = mod.rk4_end(x[:,n],dx3,dt)
+        
+        
         ####### Calculating the synchronisation error (RMSE) #######
         dd = np.zeros([D,1])
         dd[:,0] = xtrue[:,n+1] - x[:,n+1]
@@ -744,18 +560,7 @@ for n in range(1,run+1):
 
             SEvar = np.mean((SE-SEmean)**2)
           
-            #if n > 251:
-            ##plt.figure(5)
-            ##plt.plot(n+1,SEmean,'bo')
-            #plt.yscale('log')
-            ##plt.hold(True)
-                
-            ##plt.figure(6)
-            ##plt.plot(n+1,SEvar,'rx')
-            #plt.yscale('log')
-            ##plt.hold(True)
-            #print 'SEvar', SEvar
-
+    
 SEmeantot = np.mean(SEstore)
 SEvartot = np.mean(SEvarstore)
 
@@ -892,4 +697,3 @@ for k in range(D/2,D):  # for 20 vars
 plt.savefig('testvar2.png')
 #plt.show()
     
-
