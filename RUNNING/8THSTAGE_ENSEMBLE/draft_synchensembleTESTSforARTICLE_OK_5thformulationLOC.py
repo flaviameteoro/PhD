@@ -7,43 +7,49 @@ import time
 #start_time = time.clock()
 start_time2 = time.time()
 #print 'time', start_time2
-
+np.set_printoptions(threshold=np.inf)    #to print whole arrays
 #################### Initial settings ################################
-N = 13000
+N = 13000#600#15000
 Obs = 100
 dt = 0.01    
-fc = 12999
+fc = 12900#550#14990
 
-D = 100 
+D = 1000#10000 
 F=8.17
 
-M = 3
+M = 1
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
-Nens = 20  # ensemble size 
+Nens = 60  # ensemble size 
 
 
 ###################### Seeding for 20 variables########################
-#r = 5
+r=37 #for original codes 
+
 #r=18 #for x[:,0] = xtrue[:,0]
-r=37 #for original code 
 #r=44  #for RK4 and 0.0005 uniform noise (for M = 10)
 #r=39   #for RK4 and 0.0005 uniform noise (for M = 12)
+#r=1
+#r=10
+#r=50
+#r=100
+#r=24
+#r=87
 
 np.random.seed(r)  
 
 
 #################### Constructing h (obs operator) ##################
-observed_vars = range(20)    
+observed_vars = range(500)    
 L = len(observed_vars) 
 h = np.zeros([L,D])       
 for i in range(L):          
 #    h[i,observed_vars[i]] = 1.0      ## for observing the first vars in sequence 
 #    h[i,observed_vars[i]*2] = 1.0    ## for observing vars sparsely
     h[i,observed_vars[i]*(D/L)] = 1.0 ## for observing vars equally sparsed
-print 'h', h
+#print 'h', h.shape
 
 ##h4 = h[:,0:Nens]                      ## Probably for all cases, included after the 4th formulation!!
 #print 'h4', h4
@@ -56,18 +62,19 @@ print 'h', h
 
 if Nens < D:
     h4 = h[:,0:Nens]                      ## Probably for all cases, included after the 4th formulation!!
+    #print 'h4', h4
 else:
     h4 = np.zeros([L,Nens])       
     for i in range(L):          
     #    h[i,observed_vars[i]] = 1.0      ## for observing the first vars in sequence 
     #    h[i,observed_vars[i]*2] = 1.0    ## for observing vars sparsely
         h4[i,observed_vars[i]*(D/L)] = 1.0 ## for observing vars equally sparsed
-
+    #print 'h4', h4
 ################### Setting coupling matrices ########################
 K = 1.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
-print 'K', K.shape
+#print 'K', K.shape
 
-K_new = 1.e1*np.diag(np.ones([Nens]))      # For the 5th formulation
+K_new = 1.e2*np.diag(np.ones([Nens]))      #Increased to 100 to prevent dx to be divided by a factor of 10!!!! (what made Localisation work) # For the 5th formulation 
 
 
 Ks = 1.e0*np.diag(np.ones([L*M]))  
@@ -75,7 +82,7 @@ Ks = 1.e0*np.diag(np.ones([L*M]))
 
 ######### Setting tolerance and maximum for rank calculations ########
 pinv_tol =  (np.finfo(float).eps)
-max_pinv_rank = Nens
+max_pinv_rank = Nens    
 
 
 ################### Creating truth ###################################
@@ -141,8 +148,21 @@ y = np.zeros([L,N+1])
 ###### Bad noise values for y (for seed=37)
 #y = np.dot(h,xtrue) + np.random.rand(N+1)-0.5
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.2,N+1)-0.1     #### OK for 4 obs vars!!! (r = 18)####
+#hhxx = np.dot(h,xtrue)
+#print 'hx', hhxx
+
 y = np.dot(h,xtrue) + np.random.normal(0,0.1,N+1)           #### OK for 4 obs vars!!! (r = 18)####
 sigma2 = 0.01
+
+## Found out that the above way to perturb to get obs is a bit restrictive
+## Because we add the SAME value for all vars at each time step
+## This value only changes for different time steps
+#!COME BACK WITH THE FOLLOWING LINES!
+#!!!!y = np.dot(h,xtrue)
+#!!!!for i in range(N+1):
+    #!!!!forcey = np.random.normal(0,0.1,L) 
+    #!!!!y[:,i] = y[:,i] + forcey
+
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.02,N+1)-0.01
 #y = np.dot(h,xtrue) + np.random.uniform(0,0.01,N+1)-0.005
 ###(for seed=18)
@@ -179,7 +199,7 @@ Jac0 = np.copy(Jac)
 SEstore = []                     #### for calculating the mean and variance of the total SEs ####
 SEvarstore = []                  #### for calculating the mean and variance of the total SEs ####
 
-run = 1000
+run = 960
 
 oo = np.zeros([1,run+1])         #for observability calculation
 svmaxvec = np.zeros([1,run+1]) 
@@ -190,7 +210,7 @@ A = np.zeros([D,Nens])           ### for the covariance matrix ###
 B = np.zeros([D,Nens])           ### for the covariance matrix ###
 C = np.zeros([D,D])              ### covariance matrix ###   
 
-loc = 5.
+loc = 10.
 dloc = np.zeros(M*L)
 dYS = np.zeros(M*L)
 newdYS = np.zeros([1,M*L])
@@ -213,7 +233,9 @@ for n in range(1,run+1):
         Ens[:,i] = x[:,n] + force        # ensemble created from our initial x
         #print 'Ensemble member', i, 'is', Ens[:,i]
     #print 'initial ensemble created'
+    
     #print 'Ens for time', n, 'is', Ens
+    #print 'x[:,n]', x[:,n]
 
     ############ Calculate the ensemble mean to construct S ########    
     for a in range(D):
@@ -229,16 +251,22 @@ for n in range(1,run+1):
             A[b,c] = Ens[b,c] - E[b]  
     #print 'A is', A.shape
     #Acovar = (np.dot(A,np.transpose(A)))/(Nens-1)    
-    #print 'A covar is', Acovar 
+    #print 'A covar is', A
 
     ########## Constructing S and Y vectors ########################
     S[:,0:L] = np.dot(h,E)        
+    #S[:,0:L] = np.dot(h,x[:,n])    #TESTING!!! COME BACK TO PREVIOUS LINE AFTER THAT...
     #print 'S', S
     Y[:,0:L] = y[0:L,n]           
     #print 'Y', Y    
-    dsdx[0:L,:] = h4                ## Probably for all cases, included after the 4th formulation!!    
+    #dsdx[0:L,:] = h4                ## Probably for all cases, included after the 4th formulation!!    
+    dsdx[0:L,:] = np.dot(h,A)       #!! ATTENTION: THIS IS THE CORRECT LINE! (after D_d=1 tests for reviewer)
+    #print 'dsdx 1st line', dsdx[0,:]
+    #print 'dsdx 2nd line', dsdx[1,:]
+    #print 'dsdx 3rd line', dsdx[2,:]
+    #print 'dsdx 4th line', dsdx[3,:]
+    #print 'dsdx 5th line', dsdx[4,:]
     #print 'dsdx', dsdx
-  
     ###########Jac = Jac0
     #print 'Jac', Jac
 
@@ -318,11 +346,12 @@ for n in range(1,run+1):
         ##dsdx[idxs:idxs+L,:] = np.dot(h,Jac)
 
         # For 4th working formulation:
-        dsdx[idxs:idxs+L,:] = np.dot(h,B)  
-        #print 'dsdx', dsdx
+        dsdx[idxs:idxs+L,:] = np.dot(h,B) 
+        #print 'B=', B 
+        #print 'dsdx at m', m, 'is', dsdx[idxs:idxs+L,:]
 
         
-    #print 'dsdx', dsdx
+    #print 'Final dsdx=', dsdx
 
     ##### Calculating the pseudoinverse (using SVD decomposition) #####
     #dxds = np.linalg.pinv(dsdx,rcond=pinv_tol)    
@@ -370,14 +399,17 @@ for n in range(1,run+1):
     #print 'dx1', dx1
 
     ######################## Implementing LOCALISATION #########################
+    ##### SUGGESTION of OPTIMISATION:dloc is the same during the whole run, so you can calculate it just once #####
+    #############################################################################
     DX = np.zeros(D)    
     
     dYS = Y-S
     #print 'dYS', dYS
 
-    dx2 = np.dot(A,dx1)
+    dx2 = np.dot(A,dx1)    
+    #dx2 = dx1          #!!!TESTING!! CHANGE BACK TO THE ABOVE LINE AFTER THAT!
 
-    #print 'dx2', dx2
+    #print 'dx2', dx2[0,:]
 
     for i in range(D):
         #print 'var', i
@@ -408,7 +440,7 @@ for n in range(1,run+1):
             if (dist1 > (3*loc)):
                 dloc[j] = 0.
             else:
-                dloc[j] = np.exp(-(dist/(2*(loc**2))))
+                dloc[j] = np.exp(-(dist/(2*(loc**2))))   # Note that dist is already squared, as dist =  (dist1)**2!!!               
             #print 'dloc', dloc
         #print 'dloc for var',i, ':', dloc
         
@@ -423,7 +455,7 @@ for n in range(1,run+1):
             #print 'dYS[:,k]', dYS[:,k].shape
             i_newdYS = dloc[k]*i_dYS[0]            # SCHUR Product!! 
             newdYS[:,k] = i_newdYS
-        #print 'New dYS to use in the variable equation to find var', i, ':', dYS
+        #print 'New dYS to use in the variable equation to find var', i, ':', newdYS
 
         dx3 = np.dot(dx2[i,:],np.transpose(newdYS)) 
         #print 'dx3 for var',i, ':', dx3
@@ -476,16 +508,19 @@ for n in range(1,run+1):
     plt.plot(n+1,SE,'b*') 
     plt.yscale('log')
 
-    plt.title('RMSE')
-    plt.xlabel('Time units')        
-    plt.ylabel('RMSE(t)')
+    plt.title('RMSE', fontsize=20)
+    plt.xlabel('Time units', fontsize=20)        
+    plt.ylabel('RMSE(t)', fontsize=20)
+
     for tick in ax.xaxis.get_ticklabels():
-        tick.set_fontsize('large')
+        tick.set_fontsize(20)
+        #tick.set_fontsize('large')
         #tick.set_fontname('Times New Roman')
         #tick.set_color('blue')
         #tick.set_weight('bold')
     for tick in ax.yaxis.get_ticklabels():
-        tick.set_fontsize('large')
+        tick.set_fontsize(20)
+        #tick.set_fontsize('large')
         #tick.set_fontname('Times New Roman')
         #tick.set_color('blue')
         #tick.set_weight('bold')
@@ -503,15 +538,15 @@ for n in range(1,run+1):
         SEvar = np.mean((SE-SEmean)**2)
       
         #if n > 251:
-        plt.figure(5)
-        plt.plot(n+1,SEmean,'bo')
+        ##plt.figure(5)
+        ##plt.plot(n+1,SEmean,'bo')
         #plt.yscale('log')
-        plt.hold(True)
+        ##plt.hold(True)
             
-        plt.figure(6)
-        plt.plot(n+1,SEvar,'rx')
+        ##plt.figure(6)
+        ##plt.plot(n+1,SEvar,'rx')
         #plt.yscale('log')
-        plt.hold(True)
+        ##plt.hold(True)
         #print 'SEvar', SEvar
 
 SEmeantot = np.mean(SEstore)
@@ -528,7 +563,8 @@ print 'SEvartot=', SEvartot
 end_time2 = time.time() - start_time2
 print 'time', end_time2
 
-plt.show()
+plt.savefig('D1_rank60_changedline263.png')
+#plt.show()
 
 #print time.clock() - start_time, "seconds"
 
@@ -596,13 +632,19 @@ plt.figure(figsize=(12, 10)).suptitle('Variables for D='+str(D)+', M='+str(M)+',
 #for i in range(D/3):
 #for i in range(D/2):  # for 20 vars
 #for i in range(D/4):   # for 20-40 vars
-#for i in range(D/20):   # for 100 vars
+#for i in range(D/10):   # for 100 vars
 for i in range(D/100):   # for 1000 vars
+#for i in range(D/1000):   # for 10000 vars
 #    plt.subplot(np.ceil(D/8.0),2,i+1)
     plt.subplot(5,2,i+1)
-    if i == 0:  
-        plt.plot(y[0,:],'r.',label='obs')   ## create y with no zeros to plot correctly ###
-        plt.hold(True)      
+    ################## Plotting the observations ###########################
+    i_obs = (D/L)
+    if np.mod(i,i_obs) == 0:   
+        i_y = i/i_obs
+        plt.plot(y[i_y,:],'r.',label='obs')   ## create y with no zeros to plot correctly ###
+        plt.hold(True)
+
+    ##################### Plotting the variables ###########################    
            
     plt.plot(x[i,:],'g',label='X')
     plt.hold(True)
@@ -612,18 +654,28 @@ for i in range(D/100):   # for 1000 vars
     plt.ylabel('x['+str(i)+']')
     plt.xlabel('time steps')
 
+#plt.savefig('ens10000var1.png')
+
 plt.figure(figsize=(12, 10)).suptitle('Variables for D='+str(D)+', M='+str(M)+', r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
 #for k in range(D/2,D):  # for 20 vars
 #for k in range(D/4,D/2):  # for 20-40 vars
-#for k in range(D/20,D/10):  # for 100 vars
+#for k in range(D/10,D/5):  # for 100 vars
 for k in range(D/100,D/50):   # for 1000 vars
+#for k in range(D/1000,D/500):   # for 10000 vars
 #for i in range(D/3):
 #for i in range(D):
     #plt.subplot(np.ceil(D/8.0),2,i+1)
     i2 = k - 10
     plt.subplot(5,2,i2+1)
     #plt.subplot(5,4,i+1)
-    
+    ################## Plotting the observations ###########################
+    i_obs = (D/L)
+    if np.mod(k,i_obs) == 0:   
+        i_y = k/i_obs
+        plt.plot(y[i_y,:],'r.',label='obs')   ## create y with no zeros to plot correctly ###
+        plt.hold(True)
+
+    ##################### Plotting the variables ########################### 
     plt.plot(x[k,:],'g',label='X')
     plt.hold(True)
     plt.plot(xtrue[k,:],'b-',linewidth=2.0,label='truth')
@@ -631,6 +683,8 @@ for k in range(D/100,D/50):   # for 1000 vars
         
     plt.ylabel('x['+str(k)+']')
     plt.xlabel('time steps')
+
+#plt.savefig('ens10000var2.png')
 plt.show()
     
 
