@@ -24,9 +24,9 @@ print 'D=', D, 'variables and M=', M ,'time-delays'
 Nens = 50    # ensemble size 
 
 ############# To plot different time-delays in the same graph ##################
-Nens_list = [10,15,20,50]
+#Nens_list = [10,15,20,50]
 #ns_list = [10,15,20]
-#Nens_list = [10,15]
+Nens_list = [10,15]
 for w in Nens_list:
     Nens = w
     print 'Nens', Nens
@@ -164,7 +164,7 @@ for w in Nens_list:
     SEstore = []                     #### for calculating the mean and variance of the total SEs ####
     SEvarstore = []                  #### for calculating the mean and variance of the total SEs ####
 
-    run = 100
+    run = 3
 
     oo = np.zeros([1,run+1])         #for observability calculation
     svmaxvec = np.zeros([1,run+1]) 
@@ -309,7 +309,7 @@ for w in Nens_list:
         difsv = svmax - svmin    
         ratioobs = svmin/svmax
         condnumber = svmax/svmin
-        #print 'Condition number is', condnumber
+        print 'Condition number is', condnumber
         oo[:,n] = (ratioobs)**2
         obin = np.sum(oo)   
         #print 'observability', observ                   #no influence until now...(between e-05 and e-04)
@@ -467,9 +467,9 @@ for w in Nens_list:
 #plt.legend()
 #plt.legend([label1,label2,label3],loc='best')
 
-plt.legend((l1, l2, l3, l4),(l1.get_label(),l2.get_label(),l3.get_label(),l4.get_label()), loc='best')
+#plt.legend((l1, l2, l3, l4),(l1.get_label(),l2.get_label(),l3.get_label(),l4.get_label()), loc='best')
 #plt.legend((l1, l2, l3),(l1.get_label(),l2.get_label(),l3.get_label()), loc='best')
-#plt.legend((l1, l2),(l1.get_label(),l2.get_label()), loc='best')
+plt.legend((l1, l2),(l1.get_label(),l2.get_label()), loc='best')
 plt.show()
 
 print time.clock() - start_time, "seconds"

@@ -133,7 +133,7 @@ for w in sigma_list:
     SEplot = []                      #### for plotting lines for SEs ####
 
 
-    run = 9950
+    run = 3
 
     oo = np.zeros([1,run+1])      #for observability calculation
     svmaxvec = np.zeros([1,run+1]) 
@@ -268,7 +268,7 @@ for w in sigma_list:
         #plt.plot(n+1,SE,'b*') 
         #plt.yscale('log')
 
-        color = ['g', 'm', 'b']
+        color = ['y', 'm', 'b']
         #color = ['g', 'r', 'y', 'b']
         if sigma == sigma_list[0]:
             if n == run:
