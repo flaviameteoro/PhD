@@ -14,15 +14,15 @@ Obs = 100
 dt = 0.01    
 fc = 12900#550#14990
 
-D = 1000#10000 
+D = 20#10000 
 F=8.17
 
-M = 1
+M = 5
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
-Nens = 60  # ensemble size 
+Nens = 5  # ensemble size 
 
 
 ###################### Seeding for 20 variables########################
@@ -42,14 +42,14 @@ np.random.seed(r)
 
 
 #################### Constructing h (obs operator) ##################
-observed_vars = range(500)    
+observed_vars = range(5)    
 L = len(observed_vars) 
 h = np.zeros([L,D])       
 for i in range(L):          
 #    h[i,observed_vars[i]] = 1.0      ## for observing the first vars in sequence 
 #    h[i,observed_vars[i]*2] = 1.0    ## for observing vars sparsely
     h[i,observed_vars[i]*(D/L)] = 1.0 ## for observing vars equally sparsed
-#print 'h', h.shape
+#print 'h', h
 
 ##h4 = h[:,0:Nens]                      ## Probably for all cases, included after the 4th formulation!!
 #print 'h4', h4
@@ -74,7 +74,7 @@ else:
 K = 1.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
 #print 'K', K.shape
 
-K_new = 1.e2*np.diag(np.ones([Nens]))      #Increased to 100 to prevent dx to be divided by a factor of 10!!!! (what made Localisation work) # For the 5th formulation 
+K_new = 1.e1*np.diag(np.ones([Nens]))      #Increased to 100 to prevent dx to be divided by a factor of 10!!!! (what made Localisation work) # For the 5th formulation 
 
 
 Ks = 1.e0*np.diag(np.ones([L*M]))  
@@ -100,7 +100,7 @@ for j in range(1000):
     xtest[:,j+1]=mod.lorenz96(xtest[:,j],force,dt)
          
 xtrue[:,0] = xtest[:,1000]
-print 'xtrue[:,0]', xtrue[:,0]
+#print 'xtrue[:,0]', xtrue[:,0]
 
 ## Plot xtrue to understand initial conditions influences ##
 #plt.figure(1).suptitle('xtrue for seed='+str(r)+'')
@@ -114,7 +114,7 @@ dx0 = np.random.rand(D)-0.5
 x = np.zeros([D,N+1])      
 x[:,0] = xtrue[:,0] + dx0
 #x[:,0] = xtrue[:,0]
-print 'x[:,0]', x[:,0]
+#print 'x[:,0]', x[:,0]
 
 
 nTD = N + (M-1)*nTau
@@ -199,7 +199,7 @@ Jac0 = np.copy(Jac)
 SEstore = []                     #### for calculating the mean and variance of the total SEs ####
 SEvarstore = []                  #### for calculating the mean and variance of the total SEs ####
 
-run = 960
+run = 10000
 
 oo = np.zeros([1,run+1])         #for observability calculation
 svmaxvec = np.zeros([1,run+1]) 
@@ -210,7 +210,7 @@ A = np.zeros([D,Nens])           ### for the covariance matrix ###
 B = np.zeros([D,Nens])           ### for the covariance matrix ###
 C = np.zeros([D,D])              ### covariance matrix ###   
 
-loc = 10.
+loc = 1000.
 dloc = np.zeros(M*L)
 dYS = np.zeros(M*L)
 newdYS = np.zeros([1,M*L])
@@ -266,7 +266,7 @@ for n in range(1,run+1):
     #print 'dsdx 3rd line', dsdx[2,:]
     #print 'dsdx 4th line', dsdx[3,:]
     #print 'dsdx 5th line', dsdx[4,:]
-    #print 'dsdx', dsdx
+    #print 'dsdx', dsdx[0:L,:]
     ###########Jac = Jac0
     #print 'Jac', Jac
 
@@ -548,6 +548,16 @@ for n in range(1,run+1):
         #plt.yscale('log')
         ##plt.hold(True)
         #print 'SEvar', SEvar
+
+    ################################# Lissajous-plot ######################################
+    plt.figure(15).suptitle('Lissajous plot for var['+str(0)+']') 
+
+    plt.plot(xtrue[0,n+1],x[0,n+1],'r.')
+
+    plt.ylabel('x['+str(0)+']')
+    plt.xlabel('x_true['+str(0)+']')
+
+    plt.hold(True)
 
 SEmeantot = np.mean(SEstore)
 SEvartot = np.mean(SEvarstore)

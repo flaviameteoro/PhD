@@ -14,15 +14,15 @@ Obs = 100
 dt = 0.01    
 fc = 1190
 
-D = 20 
+D = 1000 
 F=8.17
 
-M = 5
+M = 2
 tau= 0.1
 nTau = tau/dt
 print 'D=', D, 'variables and M=', M ,'time-delays'
 
-Nens = 10 # ensemble size 
+Nens = 20 # ensemble size 
 
 
 ###################### Seeding for 20 variables########################
@@ -42,7 +42,7 @@ np.random.seed(r)
 
 
 #################### Constructing h (obs operator) ##################
-observed_vars = range(5)    
+observed_vars = range(500)    
 L = len(observed_vars) 
 h = np.zeros([L,D])       
 for i in range(L):          
@@ -73,9 +73,9 @@ else:
 K = 1.e1*np.diag(np.ones([D]))      # also testing: 2.e1, 5.e1, 1.e2
 #print 'K', K.shape
 
-K_new = 1.e1*np.diag(np.ones([Nens]))      #Increased to 100 to prevent dx to be divided by a factor of 10!!!! (what made Localisation work) # For the 5th formulation 
-gtau1 = 0.9#2./3.                                # Factor to be applied to the pseudoinv used in the 1st unobserved time step after an observation 
-gtau2 = 0.7#1./3.                                # Factor to be applied to the pseudoinv used in the 2nd unobserved time step after an observation 
+K_new = 1.e2*np.diag(np.ones([Nens]))      #Increased to 100 to prevent dx to be divided by a factor of 10!!!! (what made Localisation work) # For the 5th formulation 
+gtau1 = 1.0#0.9#2./3.                                # Factor to be applied to the pseudoinv used in the 1st unobserved time step after an observation 
+gtau2 = 1.0#0.7#1./3.                                # Factor to be applied to the pseudoinv used in the 2nd unobserved time step after an observation 
 
 Ks = 1.e0*np.diag(np.ones([L*M]))  
 
@@ -100,7 +100,7 @@ for j in range(1000):
     xtest[:,j+1]=mod.lorenz96(xtest[:,j],force,dt)
          
 xtrue[:,0] = xtest[:,1000]
-print 'xtrue[:,0]', xtrue[:,0]
+#print 'xtrue[:,0]', xtrue[:,0]
 
 ## Plot xtrue to understand initial conditions influences ##
 #plt.figure(1).suptitle('xtrue for seed='+str(r)+'')
@@ -114,7 +114,7 @@ dx0 = np.random.rand(D)-0.5
 x = np.zeros([D,N+1])      
 x[:,0] = xtrue[:,0] + dx0
 #x[:,0] = xtrue[:,0]
-print 'x[:,0]', x[:,0]
+#print 'x[:,0]', x[:,0]
 
 
 nTD = N + (M-1)*nTau
@@ -218,7 +218,7 @@ A = np.zeros([D,Nens])           ### for the covariance matrix ###
 B = np.zeros([D,Nens])           ### for the covariance matrix ###
 C = np.zeros([D,D])              ### covariance matrix ###   
 
-loc = 1000.
+loc = 10.
 dloc = np.zeros(M*L)
 dYS = np.zeros(M*L)
 newdYS = np.zeros([1,M*L])
@@ -230,7 +230,7 @@ for n in range(1,run+1):
     
     ##### Running Ensynch only at every 2 time steps (when we have obs) #####
     if np.all(y[:,n] != 0):
-        print 'Running Ensynch for time step', n
+        #print 'Running Ensynch for time step', n
 
         lastnobs = n
 
@@ -557,7 +557,7 @@ for n in range(1,run+1):
 
 
     elif (n - lastnobs == 1):
-        print 'Using last dxds for time step', n
+        #print 'Using last dxds for time step', n
         
                 
         ################################################################################################
@@ -572,8 +572,8 @@ for n in range(1,run+1):
          ######## NOT WORKING WELL (TOTAL RMSE = 0.3+/-) FOR D=20 AND Nens=5 !!!!!!!!!!!! #############
         ################################################################################################
         newDX1 = gtau1*DX
-        print 'DX is', DX 
-        print 'newDX is', newDX1         
+        #print 'DX is', DX 
+        #print 'newDX is', newDX1         
         x[:,n+1] = mod.rk4_end(x[:,n],newDX1,dt)
 
   
@@ -630,8 +630,8 @@ for n in range(1,run+1):
          ######## NOT WORKING WELL (TOTAL RMSE = 0.3+/-) FOR D=20 AND Nens=5 !!!!!!!!!!!! #############
         ################################################################################################
         newDX2 = gtau2*DX
-        print 'DX is', DX 
-        print 'newDX is', newDX2         
+        #print 'DX is', DX 
+        #print 'newDX is', newDX2         
         x[:,n+1] = mod.rk4_end(x[:,n],newDX2,dt)
         
 
@@ -684,7 +684,7 @@ for n in range(1,run+1):
 
 
         ################################################################################################
-        ####### 8th ATTEMPT: run the NL model AND take the mean of the ensemble as the next time step######
+        #### 8th ATTEMPT: take the mean of the ensemble as the next time step AND run the NL model######
                                   ######## NOT WORKING  #############
         ################################################################################################
         ###Ens_post = np.zeros([D,Nens])   
@@ -837,10 +837,10 @@ for w in range(run+1,fc):
 ######################## Plotting variables ###############################
 plt.figure(figsize=(12, 10)).suptitle('Variables for D='+str(D)+', M='+str(M)+', r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
 #for i in range(D/3):
-for i in range(D/2):  # for 20 vars
+#for i in range(D/2):  # for 20 vars
 #for i in range(D/4):   # for 20-40 vars
 #for i in range(D/10):   # for 100 vars
-#for i in range(D/100):   # for 1000 vars
+for i in range(D/100):   # for 1000 vars
 #    plt.subplot(np.ceil(D/8.0),2,i+1)
     plt.subplot(5,2,i+1)
     ################## Plotting the observations ###########################
@@ -863,10 +863,10 @@ for i in range(D/2):  # for 20 vars
 plt.savefig('testvar1.png')
 
 plt.figure(figsize=(12, 10)).suptitle('Variables for D='+str(D)+', M='+str(M)+', r='+str(r)+', K='+str(K[0,0])+', max_pinv_rank= '+str(max_pinv_rank)+'')
-for k in range(D/2,D):  # for 20 vars
+#for k in range(D/2,D):  # for 20 vars
 #for k in range(D/4,D/2):  # for 20-40 vars
 #for k in range(D/10,D/5):  # for 100 vars
-#for k in range(D/100,D/50):   # for 1000 vars
+for k in range(D/100,D/50):   # for 1000 vars
 #for i in range(D/3):
 #for i in range(D):
     #plt.subplot(np.ceil(D/8.0),2,i+1)
